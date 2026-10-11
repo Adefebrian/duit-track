@@ -1,0 +1,351 @@
+import { CatOpt, TxRow, CatStat, InsightRow, DueRow, BarDatum, BudgetRow, DebtRow, PaymentRow, PlanOpt, RecRow, HealthPart, TrendRow, TopRow, Parsed, GoalRow, GoalEntryRow, PBucket, PCat, ActionRow, AccOpt, AccRow, TransferRow, LoadBar, LegendItem, Slice } from "types.slint";
+
+export global D {
+    // ---------- navigation ----------
+    in-out property <int> page: 0;
+    in property <string> font;
+    in property <string> month-label;
+    in property <bool> is-current: true;
+    in property <bool> has-data: true;
+    callback month-shift(int);
+    callback month-today();
+
+    // ---------- overview: period dashboard ----------
+    in-out property <int> period: 2; // 0 day, 1 week, 2 month, 3 year
+    in property <string> period-label;
+    in property <bool> period-current: true;
+    in property <string> compare-label;
+    callback period-changed(int);
+    callback period-shift(int);
+    in property <float> p-net;
+    in property <string> p-net-text;
+    in property <string> p-net-tone;
+    in property <string> p-in-text;
+    in property <string> p-out-text;
+    in property <string> p-in-delta;
+    in property <string> p-in-tone;
+    in property <string> p-out-delta;
+    in property <string> p-out-tone;
+    in property <string> p-avg-text;
+    in property <[PBucket]> p-buckets;
+    in property <string> p-max-text;
+    in property <string> p-mid-text;
+    in property <string> p-prev-path;
+    in property <string> line-label;
+    in property <[PCat]> p-cats;
+    in property <[Slice]> p-slices;
+    in property <string> p-total-text;
+    in property <[ActionRow]> actions;
+    callback do-action(string, int);
+    in property <float> status-score;
+    in property <string> status-label;
+    in property <string> status-tone;
+    in property <string> status-line;
+    in property <string> safe-tone;
+
+    in property <float> income;
+    in property <string> income-text;
+    in property <float> expense;
+    in property <string> expense-text;
+    in property <string> projected-text;
+    in property <float> safe-today;
+    in property <string> safe-today-text;
+    in property <string> safe-caption;
+    in property <float> savings-rate;
+    in property <string> savings-text;
+    in property <string> budget-text;
+    in property <float> budget-used: -1;
+    in property <string> chart-area;
+    in property <string> chart-line;
+    in property <string> chart-typical;
+    in property <float> chart-budget-y: -1;
+    in property <string> chart-max-text;
+    in property <string> chart-mid-text;
+    in property <string> chart-end-label;
+    in property <string> chart-caption;
+    in property <[CatStat]> cat-stats;
+    in property <[InsightRow]> insights;
+    in property <[DueRow]> due;
+    in property <[BarDatum]> history;
+    in property <[BarDatum]> weekday;
+    in property <[TxRow]> recent;
+    in property <float> debt-balance;
+    in property <string> debt-balance-text;
+    in property <float> debt-progress;
+    in property <string> debt-next-text;
+    in property <bool> has-debt;
+    in property <float> pool;
+    in property <string> pool-text;
+    in property <string> inst-month-text;
+
+    // ---------- money sources ----------
+    in property <[AccOpt]> acc-opts;
+    in property <[AccRow]> accounts;
+    in property <[TransferRow]> transfers;
+    in property <string> pool-area;
+    in property <string> pool-line;
+    in property <string> pool-change-text;
+    in property <string> pool-change-tone;
+    in property <string> pool-min-text;
+    in property <string> pool-max-text;
+    in property <string> w-in-text;
+    in property <string> w-out-text;
+    in-out property <bool> acc-sheet;
+    in-out property <int> a-id;
+    in-out property <string> a-name;
+    in-out property <string> a-kind: "bank";
+    in-out property <string> a-balance;
+    in-out property <string> a-keywords;
+    in-out property <int> a-color: 0;
+    in-out property <bool> a-default;
+    in property <string> a-error;
+    callback acc-new();
+    callback acc-open(AccRow);
+    callback acc-save();
+    callback acc-archive(int);
+    in-out property <bool> trf-sheet;
+    in-out property <int> t-from;
+    in-out property <int> t-to;
+    in-out property <string> t-amount;
+    in-out property <string> t-date;
+    in-out property <string> t-note;
+    in property <string> t-error;
+    callback trf-new();
+    callback trf-save();
+    callback trf-delete(int);
+
+    // ---------- categories ----------
+    in property <[CatOpt]> exp-cats;
+    in property <[CatOpt]> inc-cats;
+
+    // ---------- quick add (natural language) ----------
+    in-out property <bool> quick-open;
+    in-out property <string> quick-text;
+    in-out property <int> quick-kind: 1; // 0 income, 1 expense: always explicit
+    in-out property <int> quick-cat: -1; // -1 = use parsed category
+    in-out property <int> quick-acc: -1; // -1 = use parsed source
+    in property <Parsed> parsed;
+    callback quick-parse();
+    callback quick-save() -> bool;
+
+    // ---------- transactions ----------
+    in property <[TxRow]> tx-rows;
+    in-out property <int> tx-filter: 0;
+    in-out property <string> tx-search;
+    in property <string> tx-in-text;
+    in property <string> tx-out-text;
+    in property <string> tx-count-text;
+    callback tx-query();
+    // edit sheet
+    in-out property <bool> tx-sheet;
+    in-out property <int> f-id;
+    in-out property <string> f-kind: "expense";
+    in-out property <string> f-amount;
+    in-out property <int> f-cat;
+    in-out property <int> f-acc;
+    in-out property <string> f-date;
+    in-out property <string> f-note;
+    in property <string> f-error;
+    callback tx-open(TxRow);
+    callback tx-new();
+    callback tx-save();
+    callback tx-delete(int);
+
+    // ---------- budget ----------
+    in property <[BudgetRow]> budget-rows;
+    in property <string> b-planned-text;
+    in property <string> b-spent-text;
+    in property <string> b-income-text;
+    in property <string> b-free-text;
+    in property <float> b-alloc;
+    in property <string> b-alloc-text;
+    in property <bool> b-over-income;
+    in property <bool> b-has-suggest;
+    callback budget-set(int, string);
+    callback budget-copy-prev();
+    callback budget-apply-suggest();
+
+    // ---------- income + recurring ----------
+    in property <[TxRow]> income-rows;
+    in property <string> inc-month-text;
+    in property <string> inc-avg-text;
+    in property <string> inc-fixed-text;
+    in property <string> exp-fixed-text;
+    in property <[RecRow]> rec-rows;
+    in-out property <bool> rec-sheet;
+    in-out property <int> r-id;
+    in-out property <string> r-kind: "expense";
+    in-out property <string> r-name;
+    in-out property <string> r-amount;
+    in-out property <int> r-cat;
+    in-out property <int> r-acc;
+    in-out property <string> r-day: "1";
+    in property <string> r-error;
+    callback rec-new(string);
+    callback rec-open(RecRow);
+    callback rec-save();
+    callback rec-delete(int);
+    callback rec-post(int);
+
+    // ---------- debts ----------
+    in property <[DebtRow]> debts;
+    in property <string> d-total-text;
+    in property <string> d-paid-text;
+    in property <float> d-progress;
+    in property <string> d-min-text;
+    in property <string> d-interest-text;
+    in property <[PaymentRow]> payments;
+    in-out property <int> debt-selected: -1;
+    in property <DebtRow> debt-current;
+    in-out property <bool> debt-detail;
+    in-out property <bool> debt-sheet;
+    in-out property <int> g-id;
+    in-out property <string> g-name;
+    in-out property <string> g-lender;
+    in-out property <string> g-start;
+    in-out property <string> g-apr: "0";
+    in-out property <string> g-min;
+    in-out property <string> g-due: "1";
+    in-out property <bool> g-inst: true;
+    in-out property <string> g-tenor: "6";
+    in-out property <string> g-paid: "0";
+    in-out property <int> debt-tab: 0;
+    in property <[LoadBar]> load-bars;
+    in property <[LegendItem]> load-legend;
+    in property <string> load-now-text;
+    in property <string> load-drop-text;
+    in property <[DebtRow]> inst-rows;
+    in property <string> g-error;
+    in-out property <bool> pay-sheet;
+    in-out property <int> p-debt;
+    in-out property <string> p-kind: "payment";
+    in-out property <string> p-amount;
+    in-out property <string> p-date;
+    in-out property <string> p-note;
+    in-out property <bool> p-record: true;
+    in-out property <int> p-acc;
+    in property <string> p-error;
+    in property <string> p-debt-name;
+    callback debt-new();
+    callback debt-edit(int);
+    callback debt-save();
+    callback debt-delete(int);
+    callback debt-open(int);
+    callback pay-open(int);
+    callback pay-save();
+    callback payment-delete(int);
+    // payoff planner
+    in property <[PlanOpt]> plan;
+    in property <string> plan-message;
+    in-out property <float> plan-extra;
+    in property <string> plan-extra-text;
+    in property <float> plan-extra-max: 5000000;
+    in property <string> plan-max-text;
+    callback plan-changed(float);
+
+    // ---------- analytics ----------
+    in-out property <int> an-span: 1; // 0 = 6 months, 1 = 12 months
+    callback an-span-changed(int);
+    in property <float> health;
+    in property <string> health-label;
+    in property <string> health-tone;
+    in property <[HealthPart]> health-parts;
+    in property <string> an-summary;
+    in property <string> an-avg-income;
+    in property <string> an-avg-expense;
+    in property <string> an-avg-savings;
+    in property <string> an-net-total;
+    in property <string> an-best;
+    in property <string> an-worst;
+    in property <string> an-dti;
+    in property <string> an-volatility;
+    in property <[BarDatum]> an-months;
+    in property <string> an-savings-path;
+    in property <string> an-savings-zero;
+    in property <float> an-zero-y;
+    in property <string> an-savings-last;
+    in property <[TrendRow]> an-trends;
+    in property <[TopRow]> an-top;
+    in property <[Slice]> an-slices;
+    in property <string> an-spend-total;
+    in property <[BarDatum]> an-weekday;
+    in property <string> an-weekday-peak;
+    in property <string> an-pool-path;
+    in property <string> an-pool-area;
+    in property <string> an-pool-now;
+    in property <string> an-pool-change;
+    in property <string> an-pool-tone;
+    in property <[string]> an-month-labels;
+    in property <[BarDatum]> an-adherence;
+
+    // ---------- savings plans ----------
+    in property <[GoalRow]> goals;
+    in property <GoalRow> goal-current;
+    in property <bool> has-goal;
+    in property <[GoalEntryRow]> goal-entries;
+    in property <string> goal-path;
+    in property <string> goal-ideal;
+    in property <string> goal-area;
+    in property <string> goal-proj;
+    in property <string> goal-proj-text;
+    in property <string> goal-proj-tone;
+    in property <string> goal-ymax;
+    in property <string> goal-ymid;
+    in property <float> goal-today-x;
+    in property <string> goal-start-text;
+    in property <string> goal-end-text;
+    callback goal-select(int);
+    callback goal-freq(int);
+    in-out property <bool> goal-sheet;
+    in-out property <int> gl-id;
+    in-out property <string> gl-name;
+    in-out property <string> gl-target;
+    in-out property <string> gl-deadline;
+    in-out property <int> gl-freq: 1;
+    in-out property <string> gl-icon: "target";
+    in-out property <int> gl-color: 0;
+    in property <string> gl-error;
+    callback goal-new();
+    callback goal-edit();
+    callback goal-save();
+    callback goal-delete(int);
+    in-out property <bool> entry-sheet;
+    in-out property <int> ge-kind: 0; // 0 deposit, 1 withdraw
+    in-out property <string> ge-amount;
+    in-out property <string> ge-date;
+    in-out property <string> ge-note;
+    in property <string> ge-error;
+    callback entry-open(int);
+    callback entry-save();
+    callback entry-delete(int);
+
+    // ---------- settings ----------
+    in-out property <int> motion-mode: 0; // 0 always, 1 follow system, 2 off
+    in-out property <int> theme-mode: 0; // 0 light, 1 night, 2 follow system
+    callback set-theme(int);
+    callback set-motion(int);
+    in property <string> db-path;
+    callback export-data();
+    callback import-data();
+    callback seed-demo();
+    in-out property <bool> reset-sheet;
+    callback reset-all();
+    in-out property <bool> cat-sheet;
+    in-out property <int> c-id;
+    in-out property <string> c-name;
+    in-out property <string> c-kind: "expense";
+    in-out property <string> c-keywords;
+    in-out property <int> c-color: 0;
+    in-out property <string> c-icon: "dots";
+    in property <string> c-error;
+    callback cat-new();
+    callback cat-open(CatOpt);
+    callback cat-save();
+    callback cat-archive(int);
+
+    // ---------- feedback ----------
+    in property <string> toast;
+    in property <bool> toast-show;
+    in property <bool> toast-undo;
+    callback undo();
+}

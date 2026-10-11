@@ -1,0 +1,736 @@
+import { T, Api } from "theme.slint";
+
+// ---------- Icons: 24px grid line icons ----------
+
+export component Icon inherits Path {
+    in property <string> name;
+    in property <color> tint: T.text2;
+    in property <length> size: 18px;
+    width: size;
+    height: size;
+    viewbox-width: 24;
+    viewbox-height: 24;
+    stroke: tint;
+    stroke-width: 1.7px;
+    fill: transparent;
+    commands:
+        name == "overview" ? "M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z" :
+        name == "analytics" ? "M3 20h18 M6 16v-5 M11 16V6 M16 16v-8 M21 16V9" :
+        name == "list" ? "M9 6h11 M9 12h11 M9 18h11 M4 5.5v1 M4 11.5v1 M4 17.5v1" :
+        name == "budget" ? "M12 3a9 9 0 1 0 9 9h-9z M14.5 2.8A9 9 0 0 1 21.2 9.5h-6.7z" :
+        name == "income" ? "M12 3v11 M7 9.5l5 5 5-5 M4 16v4h16v-4" :
+        name == "debt" ? "M3 6h18v12H3z M3 10h18 M7 14.5h4" :
+        name == "card" ? "M3 6h18v12H3z M3 10h18 M7 14.5h4" :
+        name == "settings" ? "M4 7h9 M17 7h3 M4 17h3 M11 17h9 M15 5v4 M9 15v4" :
+        name == "plus" ? "M12 5v14 M5 12h14" :
+        name == "food" ? "M7 3v7a2 2 0 0 0 4 0V3 M9 12v9 M17 3c-2.5 2-2.5 7 0 9v9" :
+        name == "car" ? "M3 13l2.2-6h13.6l2.2 6v5H3z M3 13h18 M7 18v2 M17 18v2" :
+        name == "bag" ? "M5 8h14l-1 13H6z M9 8V6.5a3 3 0 0 1 6 0V8" :
+        name == "bolt" ? "M13 2L4.5 14H11l-1 8 8.5-12H12z" :
+        name == "play" ? "M6 4.5v15l13-7.5z" :
+        name == "heart" ? "M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z" :
+        name == "book" ? "M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3" :
+        name == "home" ? "M3 11l9-7 9 7 M5.5 9.5V20h13V9.5 M10 20v-6h4v6" :
+        name == "gift" ? "M4 11h16v9H4z M3 7.5h18V11H3z M12 7.5V20 M12 7.5C10 3.5 6 4.5 7.5 7.5 M12 7.5c2-4 6-3 4.5 0" :
+        name == "dots" ? "M5 12h2 M11 12h2 M17 12h2" :
+        name == "wallet" ? "M3 7h16.5A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5H3z M3 7l12-4v4 M16 13.5h2" :
+        name == "star" ? "M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" :
+        name == "briefcase" ? "M3 7h18v13H3z M8.5 7V4h7v3 M3 12.5h18" :
+        name == "trend" ? "M3 17l6-6 4 4 8-8 M15 7h6v6" :
+        name == "search" ? "M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13z M20 20l-4.8-4.8" :
+        name == "left" ? "M15 5l-7 7 7 7" :
+        name == "right" ? "M9 5l7 7-7 7" :
+        name == "close" ? "M6 6l12 12 M18 6L6 18" :
+        name == "check" ? "M5 12.5l4.5 4.5L19 7" :
+        name == "trash" ? "M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13" :
+        name == "edit" ? "M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4" :
+        name == "repeat" ? "M17 3l3 3-3 3 M4 11V9.5A3.5 3.5 0 0 1 7.5 6H20 M7 21l-3-3 3-3 M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H4" :
+        name == "bulb" ? "M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.8 10.6c.6.6.8 1.3.8 2.4h6c0-1.1.2-1.8.8-2.4A6 6 0 0 0 12 3z" :
+        name == "alert" ? "M12 3.5L21.5 20h-19z M12 10v4.5 M12 17v1" :
+        name == "calendar" ? "M4 6h16v15H4z M4 10.5h16 M8 3v4 M16 3v4" :
+        name == "down" ? "M12 4v12 M6.5 10.5L12 16l5.5-5.5 M4 20h16" :
+        name == "up" ? "M12 16V4 M6.5 9.5L12 4l5.5 5.5 M4 20h16" :
+        name == "arrow-up" ? "M12 19V5 M6 11l6-6 6 6" :
+        name == "arrow-down" ? "M12 5v14 M6 13l6 6 6-6" :
+        name == "target" ? "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z" :
+        name == "bank" ? "M3 9.5L12 4l9 5.5 M4 9.5h16 M6 10v7 M10 10v7 M14 10v7 M18 10v7 M3.5 20h17" :
+        name == "ewallet" ? "M7 3h10v18H7z M10.5 18h3" :
+        name == "cash" ? "M3 6.5h18v11H3z M12 9.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z M6 9.5v5 M18 9.5v5" :
+        name == "wallet2" ? "M3 7h16.5A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5H3z M3 7l12-4v4 M16 13.5h2" :
+        name == "swap" ? "M4 8h14 M14 4l4 4-4 4 M20 16H6 M10 12l-4 4 4 4" :
+        name == "clock" ? "M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17z M12 7.5V12l3 2" :
+        name == "moon" ? "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" :
+        name == "sun" ? "M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M12 2.5v2 M12 19.5v2 M4.6 4.6L6 6 M18 18l1.4 1.4 M2.5 12h2 M19.5 12h2 M4.6 19.4L6 18 M18 6l1.4-1.4" :
+        name == "pie" ? "M12 3a9 9 0 1 0 9 9h-9z M14.5 2.8A9 9 0 0 1 21.2 9.5h-6.7z" :
+        name == "shield" ? "M12 3l8 3v6c0 4.5-3.4 7.8-8 9-4.6-1.2-8-4.5-8-9V6z M8.5 12l2.5 2.5 4.5-5" :
+        "M6 12h12";
+}
+
+// ---------- Material-style state layer + ripple, used inside any pressable ----------
+
+export component Ripple inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <color> tone: T.text;
+    out property <bool> has-hover: ta.has-hover;
+    out property <bool> pressed: ta.pressed;
+    callback clicked();
+    property <length> px;
+    property <length> py;
+    property <float> wave: 0;
+    clip: true;
+    background: !enabled ? transparent : ta.pressed ? T.press : ta.has-hover ? T.hover : transparent;
+    animate background { duration: T.motion ? T.d-fast : 0ms; }
+
+    Rectangle {
+        x: root.px - self.width / 2;
+        y: root.py - self.height / 2;
+        width: root.wave * max(root.width, root.height) * 2.6;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.tone;
+        opacity: root.wave > 0.01 ? (1 - root.wave) * 0.12 : 0;
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                root.px = self.mouse-x;
+                root.py = self.mouse-y;
+                root.wave = 0;
+            }
+        }
+        clicked => {
+            root.wave = 1;
+            root.clicked();
+        }
+    }
+
+    animate wave { duration: T.motion ? 480ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    @children
+}
+
+// ---------- Buttons ----------
+
+export component Button inherits Rectangle {
+    in property <string> label;
+    in property <string> icon;
+    // filled | tonal | outline | text | danger
+    in property <string> kind: "filled";
+    in property <bool> enabled: true;
+    in property <bool> compact: false;
+    // fill: take the full width of the parent column (used for stacked actions)
+    in property <bool> fill: false;
+    callback clicked();
+    height: compact ? T.h-compact : T.h-control;
+    min-width: lay.preferred-width;
+    max-width: fill ? 100000px : lay.preferred-width;
+    horizontal-stretch: fill ? 1 : 0;
+    border-radius: T.r-control;
+    background: kind == "filled" ? T.accent
+        : kind == "tonal" ? T.accent-soft
+        : transparent;
+    border-width: kind == "outline" || kind == "danger" ? 1px : 0px;
+    border-color: kind == "danger" ? T.neg.with-alpha(0.45) : T.line-strong;
+    opacity: enabled ? 1 : 0.4;
+
+    r := Ripple {
+        border-radius: root.border-radius;
+        enabled: root.enabled;
+        tone: kind == "filled" ? T.on-accent : T.text;
+        clicked => { root.clicked(); }
+    }
+    lay := HorizontalLayout {
+        padding-left: compact ? 12px : 16px;
+        padding-right: compact ? 12px : 16px;
+        spacing: 6px;
+        alignment: center;
+        if root.icon != "" : Icon {
+            y: (parent.height - self.height) / 2;
+            name: root.icon;
+            size: 16px;
+            tint: kind == "filled" ? T.on-accent : kind == "danger" ? T.neg : kind == "tonal" ? T.accent : T.text;
+        }
+        if root.label != "" : Text {
+            text: root.label;
+            vertical-alignment: center;
+            font-size: T.fs-body;
+            font-weight: 600;
+            color: kind == "filled" ? T.on-accent : kind == "danger" ? T.neg : kind == "tonal" ? T.accent : T.text;
+        }
+    }
+}
+
+export component IconButton inherits Rectangle {
+    in property <string> icon;
+    in property <color> tint: T.text2;
+    in property <length> size: 32px;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: size;
+    height: size;
+    border-radius: T.r-control;
+    Ripple {
+        border-radius: root.border-radius;
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+    Icon {
+        name: root.icon;
+        tint: root.enabled ? root.tint : T.text3;
+        size: 18px;
+    }
+}
+
+// ---------- Segmented control (Apple) with sliding thumb ----------
+
+export component Segmented inherits Rectangle {
+    in property <[string]> items;
+    in-out property <int> index: 0;
+    callback changed(int);
+    height: T.h-control;
+    border-radius: T.r-control;
+    background: T.tonal2;
+    property <length> seg: (self.width - 4px) / max(1, items.length);
+    min-width: items.length * 84px;
+
+    Rectangle {
+        x: 2px + root.index * root.seg;
+        y: 2px;
+        width: root.seg;
+        height: root.height - 4px;
+        border-radius: T.r-control - 2px;
+        background: T.bg;
+        border-width: 1px;
+        border-color: T.line;
+        animate x { duration: T.motion ? T.d-med : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    }
+    for it[i] in items : Rectangle {
+        x: 2px + i * root.seg;
+        width: root.seg;
+        Text {
+            text: it;
+            font-size: T.fs-body;
+            font-weight: root.index == i ? 600 : 500;
+            color: root.index == i ? T.text : T.text2;
+        }
+        TouchArea {
+            mouse-cursor: pointer;
+            clicked => {
+                root.index = i;
+                root.changed(i);
+            }
+        }
+    }
+}
+
+// ---------- Surfaces ----------
+
+export component Card inherits Rectangle {
+    in property <bool> tonal: false;
+    background: tonal ? T.tonal : T.bg;
+    border-radius: T.r-lg;
+    border-width: tonal ? 0px : 1px;
+    border-color: T.line;
+}
+
+export component SectionTitle inherits HorizontalLayout {
+    in property <string> text;
+    in property <string> sub;
+    spacing: 8px;
+    alignment: start;
+    Text {
+        text: root.text;
+        font-size: T.fs-head;
+        font-weight: 600;
+        color: T.text;
+        vertical-alignment: center;
+    }
+    if root.sub != "" : Text {
+        text: root.sub;
+        font-size: T.fs-cap;
+        color: T.text3;
+        vertical-alignment: center;
+    }
+}
+
+export component Pill inherits Rectangle {
+    in property <string> text;
+    // neutral | accent | pos | neg | warn
+    in property <string> tone: "neutral";
+    height: 22px;
+    width: t.preferred-width + 16px;
+    border-radius: 11px;
+    background: tone == "pos" ? T.pos-soft : tone == "neg" ? T.neg-soft : tone == "warn" ? T.warn-soft : tone == "accent" ? T.accent-soft : T.tonal2;
+    t := Text {
+        text: root.text;
+        font-size: T.fs-cap;
+        font-weight: 600;
+        color: tone == "pos" ? T.pos : tone == "neg" ? T.neg : tone == "warn" ? T.warn : tone == "accent" ? T.accent : T.text2;
+    }
+}
+
+// Rounded square holding a category icon on its soft color.
+export component CatBadge inherits Rectangle {
+    in property <string> icon;
+    in property <color> tint: T.accent;
+    in property <length> size: 34px;
+    width: size;
+    height: size;
+    border-radius: T.r-badge;
+    background: tint.with-alpha(0.12);
+    Icon {
+        name: root.icon;
+        tint: root.tint;
+        size: root.size * 0.5;
+    }
+}
+
+// ---------- Numbers ----------
+
+// Count-up money. Shows the exact string once settled so rounding never leaks.
+export component Money inherits Text {
+    in property <float> value;
+    in property <string> exact;
+    in property <bool> compact: false;
+    property <float> shown: value;
+    animate shown { duration: T.motion ? T.d-count : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    text: abs(shown - value) < 0.5 ? exact : (compact ? Api.rp-compact(shown) : Api.rp(shown));
+    color: T.text;
+    letter-spacing: self.font-size >= 18px ? -0.4px : 0px;
+}
+
+// ---------- Progress ----------
+
+export component Bar inherits Rectangle {
+    in property <float> value;
+    // optional second, lighter segment (projection)
+    in property <float> ghost: 0;
+    in property <color> tint: T.accent;
+    in property <length> thickness: 8px;
+    in property <duration> delay: 0ms;
+    property <float> v: 0;
+    property <float> g: 0;
+    height: thickness;
+    border-radius: thickness / 2;
+    background: T.tonal2;
+    clip: true;
+    init => {
+        v = min(1, max(0, value));
+        g = min(1, max(0, ghost));
+    }
+    changed value => { v = min(1, max(0, value)); }
+    changed ghost => { g = min(1, max(0, ghost)); }
+    animate v, g { duration: T.motion ? T.d-slow : 0ms; delay: T.motion ? root.delay : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    Rectangle {
+        x: 0;
+        width: root.width * root.g;
+        border-radius: root.thickness / 2;
+        background: root.tint.with-alpha(0.22);
+    }
+    Rectangle {
+        x: 0;
+        width: root.width * root.v;
+        border-radius: root.thickness / 2;
+        background: root.tint;
+    }
+}
+
+// Circular progress drawn as an arc path, animated on change.
+export component Ring inherits Rectangle {
+    in property <float> value;
+    in property <color> tint: T.accent;
+    in property <color> track: T.tonal2;
+    in property <length> size: 64px;
+    in property <float> thickness: 9;
+    property <float> p: 0;
+    width: size;
+    height: size;
+    init => { p = min(0.9999, max(0, value)); }
+    changed value => { p = min(0.9999, max(0, value)); }
+    animate p { duration: T.motion ? 900ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    property <float> r: 50 - thickness / 2 - 1;
+    property <angle> a: p * 360deg - 90deg;
+    Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: root.track;
+        stroke-width: root.size * root.thickness / 100;
+        fill: transparent;
+        commands: "M 50 " + (50 - root.r) + " A " + root.r + " " + root.r + " 0 1 1 " + (50 - 0.01) + " " + (50 - root.r);
+    }
+    if root.p > 0.002 : Path {
+        width: 100%;
+        height: 100%;
+        viewbox-width: 100;
+        viewbox-height: 100;
+        stroke: root.tint;
+        stroke-width: root.size * root.thickness / 100;
+        fill: transparent;
+        commands: "M 50 " + (50 - root.r) + " A " + root.r + " " + root.r + " 0 " + (root.p > 0.5 ? "1" : "0") + " 1 "
+            + (50 + root.r * cos(root.a)) + " " + (50 + root.r * sin(root.a));
+    }
+    @children
+}
+
+// Draws a chart path left to right on appear.
+export component Reveal inherits Rectangle {
+    in property <duration> duration: 900ms;
+    property <float> k: 0;
+    clip: true;
+    init => { k = 1; }
+    animate k { duration: T.motion ? root.duration : 0ms; easing: cubic-bezier(0.3, 0, 0.1, 1); }
+    Rectangle {
+        x: 0;
+        width: root.width * root.k;
+        clip: true;
+        Rectangle {
+            x: 0;
+            width: root.width;
+            @children
+        }
+    }
+}
+
+// Fades and lifts content in once, with an optional stagger.
+export component Enter inherits Rectangle {
+    in property <int> order: 0;
+    property <float> k: 0;
+    init => { k = 1; }
+    animate k { duration: T.motion ? 420ms : 0ms; delay: T.motion ? min(order, 12) * 35ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    opacity: k;
+    min-width: lay.min-width;
+    min-height: lay.min-height;
+    preferred-width: lay.preferred-width;
+    preferred-height: lay.preferred-height;
+    lay := VerticalLayout {
+        y: (1 - root.k) * 10px;
+        height: root.height;
+        @children
+    }
+}
+
+// ---------- Inputs ----------
+
+export component Field inherits Rectangle {
+    in property <string> label;
+    in property <string> placeholder;
+    in-out property <string> text;
+    in property <string> suffix;
+    // money: formats thousands while typing and shows what shorthand means
+    in property <bool> money: false;
+    in property <bool> mono: false;
+    in property <string> error;
+    callback edited(string);
+    callback accepted(string);
+    public function focus-input() { ti.focus(); }
+    height: label == "" ? T.h-control : T.h-control + 22px;
+    VerticalLayout {
+        spacing: 6px;
+        if root.label != "" : Text {
+            text: root.label;
+            font-size: T.fs-cap;
+            font-weight: 600;
+            color: T.text2;
+        }
+        Rectangle {
+            height: T.h-control;
+            border-radius: T.r-control;
+            background: T.bg;
+            border-width: ti.has-focus ? 2px : 1px;
+            border-color: root.error != "" ? T.neg : ti.has-focus ? T.accent : T.line-strong;
+            animate border-color { duration: T.motion ? T.d-fast : 0ms; }
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 8px;
+                Rectangle {
+                    ph := Text {
+                        x: 0;
+                        width: parent.width;
+                        text: root.placeholder;
+                        color: T.text3;
+                        font-size: T.fs-body + 1px;
+                        vertical-alignment: center;
+                        visible: ti.text == "";
+                        overflow: elide;
+                    }
+                    ti := TextInput {
+                        x: 0;
+                        width: parent.width;
+                        height: parent.height;
+                        text <=> root.text;
+                        single-line: true;
+                        font-size: T.fs-body + 1px;
+                        color: T.text;
+                        vertical-alignment: center;
+                        selection-background-color: T.accent-line;
+                        edited => {
+                            if (root.money) {
+                                if (Api.format-amount(self.text) != self.text) {
+                                    self.text = Api.format-amount(self.text);
+                                    self.set-selection-offsets(self.text.character-count, self.text.character-count);
+                                }
+                            }
+                            root.edited(self.text);
+                        }
+                        accepted => { root.accepted(self.text); }
+                    }
+                }
+                if root.suffix != "" || root.money : Text {
+                    text: root.money ? Api.amount-suffix(root.text) : root.suffix;
+                    color: T.text3;
+                    font-size: T.fs-cap;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+// Day stepper: "< Hari ini, 12 Okt >"
+export component DateStepper inherits Rectangle {
+    in-out property <string> date;
+    height: T.h-control;
+    border-radius: T.r-sm;
+    border-width: 1px;
+    border-color: T.line-strong;
+    HorizontalLayout {
+        padding-left: 4px;
+        padding-right: 4px;
+        IconButton {
+            y: 2px;
+            icon: "left";
+            clicked => { root.date = Api.shift-date(root.date, -1); }
+        }
+        Text {
+            text: Api.date-label(root.date);
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-size: T.fs-body + 1px;
+            font-weight: 600;
+            color: T.text;
+        }
+        IconButton {
+            y: 2px;
+            icon: "right";
+            enabled: root.date < Api.today();
+            clicked => { root.date = Api.shift-date(root.date, 1); }
+        }
+    }
+}
+
+export component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    callback toggled(bool);
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: on ? T.accent : T.line-strong;
+    animate background { duration: T.motion ? T.d-med : 0ms; }
+    Rectangle {
+        x: root.on ? root.width - self.width - 3px : 3px;
+        y: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: #FFFFFF;
+        animate x { duration: T.motion ? T.d-med : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    }
+    TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.on = !root.on;
+            root.toggled(root.on);
+        }
+    }
+}
+
+// Selectable chip (Material filter chip).
+export component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    in property <color> tint: T.accent;
+    callback clicked();
+    height: 30px;
+    width: lbl.preferred-width + 24px;
+    border-radius: T.r-control;
+    background: selected ? tint.with-alpha(0.12) : T.bg;
+    border-width: 1px;
+    border-color: selected ? tint.with-alpha(0.5) : T.line;
+    animate background, border-color { duration: T.motion ? T.d-fast : 0ms; }
+    Ripple {
+        border-radius: root.border-radius;
+        clicked => { root.clicked(); }
+    }
+    lbl := Text {
+        text: root.text;
+        font-size: T.fs-cap + 0.5px;
+        font-weight: selected ? 650 : 500;
+        color: selected ? tint : T.text2;
+    }
+}
+
+// Modal sheet: dimmed backdrop + card that scales in.
+export component Sheet inherits Rectangle {
+    in property <bool> open;
+    in property <length> sheet-width: 460px;
+    in property <string> title;
+    callback dismiss();
+    property <float> k: open ? 1 : 0;
+    animate k { duration: T.motion ? 300ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    visible: k > 0.001;
+    background: T.scrim.with-alpha((T.dark ? 0.5 : 0.28) * k);
+    TouchArea { clicked => { root.dismiss(); } }
+    Rectangle {
+        width: min(root.sheet-width, root.width - 32px);
+        height: min(body.preferred-height, root.height - 48px);
+        y: (root.height - self.height) / 2 + (1 - root.k) * 18px;
+        opacity: root.k;
+        background: T.bg;
+        border-radius: T.r-card;
+        border-width: 1px;
+        border-color: T.line;
+        clip: true;
+        TouchArea { }
+        body := VerticalLayout {
+            padding: 20px;
+            spacing: 16px;
+            HorizontalLayout {
+                Text {
+                    text: root.title;
+                    font-size: 17px;
+                    font-weight: 600;
+                    color: T.text;
+                    vertical-alignment: center;
+                }
+                IconButton {
+                    icon: "close";
+                    clicked => { root.dismiss(); }
+                }
+            }
+            @children
+        }
+    }
+}
+
+export component EmptyState inherits VerticalLayout {
+    in property <string> icon;
+    in property <string> title;
+    in property <string> body;
+    alignment: center;
+    spacing: 8px;
+    padding: 24px;
+    HorizontalLayout {
+        alignment: center;
+        Rectangle {
+            width: 48px;
+            height: 48px;
+            border-radius: T.r-badge;
+            background: T.tonal;
+            Icon { name: root.icon; size: 22px; tint: T.text3; }
+        }
+    }
+    Text {
+        text: root.title;
+        horizontal-alignment: center;
+        font-size: T.fs-head;
+        font-weight: 600;
+        color: T.text;
+    }
+    Text {
+        text: root.body;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+        font-size: T.fs-body;
+        color: T.text3;
+    }
+}
+
+// Slider drawn with tokens so it matches light and night themes.
+export component Slider inherits Rectangle {
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in-out property <float> value;
+    callback changed(float);
+    height: 28px;
+    property <float> f: maximum > minimum ? (value - minimum) / (maximum - minimum) : 0;
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: 6px;
+        border-radius: 3px;
+        background: T.tonal2;
+    }
+    Rectangle {
+        x: 0;
+        y: (parent.height - self.height) / 2;
+        width: (parent.width - 20px) * root.f + 10px;
+        height: 6px;
+        border-radius: 3px;
+        background: T.accent;
+    }
+    Rectangle {
+        x: (parent.width - self.width) * root.f;
+        y: (parent.height - self.height) / 2;
+        width: ta.pressed ? 22px : 20px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: T.bg;
+        border-width: 2px;
+        border-color: T.accent;
+        animate width { duration: T.motion ? T.d-fast : 0ms; }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        function set-from(px: length) {
+            root.value = root.minimum + max(0, min(1, (px - 10px) / (root.width - 20px))) * (root.maximum - root.minimum);
+            root.changed(root.value);
+        }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) {
+                self.set-from(self.mouse-x);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                self.set-from(self.mouse-x);
+            }
+        }
+    }
+}
+
+// Month stepper for future dates (plan deadlines): "< Maret 2027 >"
+export component MonthStepper inherits Rectangle {
+    in-out property <string> date;
+    height: T.h-control;
+    border-radius: T.r-control;
+    border-width: 1px;
+    border-color: T.line-strong;
+    background: T.bg;
+    HorizontalLayout {
+        padding-left: 2px;
+        padding-right: 2px;
+        IconButton {
+            y: 2px;
+            icon: "left";
+            enabled: Api.shift-month(root.date, -1) > Api.today();
+            clicked => { root.date = Api.shift-month(root.date, -1); }
+        }
+        Text {
+            text: Api.month-text(root.date);
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            font-size: T.fs-body + 1px;
+            font-weight: 500;
+            color: T.text;
+        }
+        IconButton {
+            y: 2px;
+            icon: "right";
+            clicked => { root.date = Api.shift-month(root.date, 1); }
+        }
+    }
+}

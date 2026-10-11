@@ -1,0 +1,146 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { RecRow } from "../types.slint";
+import { Icon, IconButton, Button, Card, Pill, CatBadge, Enter, SectionTitle, EmptyState, Ripple } from "../components.slint";
+import { PageHeader, TxLine } from "../shared.slint";
+
+component RecLine inherits Rectangle {
+    in property <RecRow> rec;
+    in property <int> order;
+    height: 58px;
+    Enter {
+        order: root.order;
+        Rectangle {
+            border-radius: T.r-md;
+            Ripple {
+                border-radius: T.r-md;
+                clicked => { D.rec-open(root.rec); }
+            }
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                spacing: 12px;
+                CatBadge { y: (parent.height - self.height) / 2; icon: rec.icon; tint: rec.tint; }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 2px;
+                    Text { text: rec.name; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; overflow: elide; }
+                    Text { text: "Tgl " + rec.day + ", " + rec.cat-name; font-size: T.fs-cap; color: T.text3; overflow: elide; }
+                }
+                Text {
+                    text: (rec.kind == "income" ? "+" : "-") + rec.amount-text;
+                    horizontal-alignment: right;
+                    vertical-alignment: center;
+                    font-weight: 600;
+                    color: rec.kind == "income" ? T.pos : T.text;
+                }
+                if rec.posted : Pill { y: (parent.height - self.height) / 2; text: "Tercatat"; tone: "pos"; }
+                if !rec.posted && D.is-current : Button {
+                    y: (parent.height - self.height) / 2;
+                    compact: true;
+                    kind: "tonal";
+                    label: "Catat";
+                    clicked => { D.rec-post(rec.id); }
+                }
+            }
+        }
+    }
+}
+
+export component IncomePage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Rutin";
+
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            for k[i] in [
+                { label: "Pemasukan bulan ini", value: D.inc-month-text, tone: "pos" },
+                { label: "Rata-rata 3 bulan", value: D.inc-avg-text, tone: "" },
+                { label: "Pemasukan rutin", value: D.inc-fixed-text, tone: "" },
+                { label: "Tagihan rutin", value: D.exp-fixed-text, tone: "" },
+            ] : Card {
+                Enter {
+                    order: i;
+                    VerticalLayout {
+                        padding: 20px;
+                        spacing: 4px;
+                        Text { text: k.label; font-size: T.fs-cap + 0.5px; font-weight: 600; color: T.text2; }
+                        Text { text: k.value; font-size: 20px; font-weight: 600; color: k.tone == "pos" ? T.pos : T.text; }
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            alignment: stretch;
+            Card {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 4px;
+                    alignment: start;
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        SectionTitle { text: "Pemasukan bulan ini"; }
+                        Button {
+                            compact: true;
+                            kind: "tonal";
+                            icon: "plus";
+                            label: "Tambah";
+                            clicked => {
+                                D.tx-new();
+                                D.f-kind = "income";
+                                D.f-cat = D.inc-cats[0].id;
+                            }
+                        }
+                    }
+                    if D.income-rows.length == 0 : EmptyState {
+                        icon: "income";
+                        title: "Belum ada pemasukan";
+                        body: "Gaji, bonus, freelance";
+                    }
+                    for r[i] in D.income-rows : TxLine {
+                        tx: r;
+                        order: i;
+                        open(row) => { D.tx-open(row); }
+                    }
+                }
+            }
+            Card {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 4px;
+                    alignment: start;
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        spacing: 8px;
+                        SectionTitle { text: "Rutin"; }
+                        Button { compact: true; kind: "outline"; label: "Pemasukan"; icon: "plus"; clicked => { D.rec-new("income"); } }
+                        Button { compact: true; kind: "outline"; label: "Tagihan"; icon: "plus"; clicked => { D.rec-new("expense"); } }
+                    }
+
+                    if D.rec-rows.length == 0 : EmptyState {
+                        icon: "repeat";
+                        title: "Belum ada transaksi rutin";
+                        body: "Gaji, sewa, internet, langganan";
+                    }
+                    for r[i] in D.rec-rows : RecLine { rec: r; order: i; }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,661 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { Icon, IconButton, Button, Card, Pill, Bar, Ring, Reveal, Enter, Money, CatBadge, Segmented, Ripple } from "../components.slint";
+import { TxLine } from "../shared.slint";
+
+component Label inherits Text {
+    font-size: T.fs-cap;
+    color: T.text3;
+    overflow: elide;
+}
+
+component TileTitle inherits Text {
+    font-size: 14px;
+    font-weight: T.w-title;
+    color: T.text;
+    overflow: elide;
+}
+
+component Delta inherits Rectangle {
+    in property <string> text;
+    in property <string> tone;
+    height: 20px;
+    width: t.preferred-width + 12px;
+    border-radius: 10px;
+    visible: text != "";
+    background: tone == "pos" ? T.pos-soft : tone == "neg" ? T.neg-soft : T.tonal2;
+    t := Text {
+        text: root.text;
+        font-size: 11px;
+        font-weight: 600;
+        color: tone == "pos" ? T.pos : tone == "neg" ? T.neg : T.text2;
+    }
+}
+
+// Period header: segmented filter + date stepper.
+component PeriodBar inherits HorizontalLayout {
+    spacing: 12px;
+    Text {
+        text: "Ringkasan";
+        font-size: 28px;
+        font-weight: T.w-title;
+        letter-spacing: -0.6px;
+        color: T.text;
+        vertical-alignment: center;
+    }
+    Rectangle { horizontal-stretch: 1; }
+    Segmented {
+        y: (parent.height - self.height) / 2;
+        width: 300px;
+        items: ["Hari", "Minggu", "Bulan", "Tahun"];
+        index <=> D.period;
+        changed(i) => { D.period-changed(i); }
+    }
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: T.h-control;
+        width: nav.preferred-width;
+        border-radius: T.r-control;
+        background: T.bg;
+        border-width: 1px;
+        border-color: T.line;
+        nav := HorizontalLayout {
+            padding-left: 2px;
+            padding-right: 2px;
+            IconButton { y: 2px; size: 32px; icon: "left"; clicked => { D.period-shift(-1); } }
+            Text {
+                text: D.period-label;
+                min-width: 120px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                font-size: T.fs-body;
+                font-weight: 500;
+                color: T.text;
+            }
+            IconButton { y: 2px; size: 32px; icon: "right"; enabled: !D.period-current; clicked => { D.period-shift(1); } }
+        }
+    }
+}
+
+component Hero inherits Card {
+    Enter {
+        VerticalLayout {
+            alignment: space-between;
+            padding: 20px;
+            spacing: 8px;
+            Label { text: "Arus bersih, " + D.period-label; }
+            Money {
+                value: D.p-net;
+                exact: D.p-net-text;
+                font-size: 40px;
+                font-weight: T.w-num;
+                letter-spacing: -1.1px;
+                color: D.p-net-tone == "neg" ? T.neg : T.text;
+            }
+            HorizontalLayout {
+                spacing: 28px;
+                alignment: start;
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Icon { y: (parent.height - self.height) / 2; name: "arrow-down"; size: 13px; tint: T.pos; }
+                        Label { text: "Masuk"; vertical-alignment: center; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: D.p-in-text; font-size: 17px; font-weight: T.w-num; letter-spacing: -0.3px; color: T.text; vertical-alignment: center; }
+                        Delta { y: (parent.height - self.height) / 2; text: D.p-in-delta; tone: D.p-in-tone; }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 6px;
+                        Icon { y: (parent.height - self.height) / 2; name: "arrow-up"; size: 13px; tint: T.text2; }
+                        Label { text: "Keluar"; vertical-alignment: center; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text { text: D.p-out-text; font-size: 17px; font-weight: T.w-num; letter-spacing: -0.3px; color: T.text; vertical-alignment: center; }
+                        Delta { y: (parent.height - self.height) / 2; text: D.p-out-delta; tone: D.p-out-tone; }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 4px;
+                    Label { text: "Rata-rata / hari"; }
+                    Text { text: D.p-avg-text; font-size: 17px; font-weight: T.w-num; letter-spacing: -0.3px; color: T.text; }
+                }
+            }
+        }
+    }
+}
+
+component StatusTile inherits Card {
+    background: D.status-tone == "neg" ? T.neg-soft : D.status-tone == "warn" ? T.warn-soft : T.accent-soft;
+    border-width: 0;
+    animate background { duration: T.motion ? T.d-med : 0ms; }
+    Ripple {
+        border-radius: T.r-card;
+        clicked => { D.page = 1; }
+    }
+    Enter {
+        order: 1;
+        VerticalLayout {
+            alignment: space-between;
+            padding: 20px;
+            spacing: 14px;
+            Label { text: "Kondisi"; color: T.text2; }
+            HorizontalLayout {
+                spacing: 12px;
+                alignment: start;
+                if D.has-data : Ring {
+                    y: (parent.height - self.height) / 2;
+                    size: 52px;
+                    thickness: 11;
+                    value: D.status-score / 100;
+                    track: T.bg.with-alpha(0.7);
+                    tint: D.status-tone == "neg" ? T.neg : D.status-tone == "warn" ? T.warn : T.accent;
+                    Text { text: round(D.status-score); font-size: 15px; font-weight: 600; color: T.text; }
+                }
+                Text {
+                    text: D.status-label;
+                    font-size: 24px;
+                    font-weight: T.w-num;
+                    letter-spacing: -0.5px;
+                    vertical-alignment: center;
+                    color: D.status-tone == "neg" ? T.neg : D.status-tone == "warn" ? T.warn : T.accent;
+                }
+            }
+            Text { text: D.status-line; font-size: T.fs-cap; color: T.text2; overflow: elide; }
+        }
+    }
+}
+
+component SafeTile inherits Card {
+    Enter {
+        order: 2;
+        VerticalLayout {
+            alignment: space-between;
+            padding: 20px;
+            spacing: 14px;
+            Label { text: "Aman dibelanjakan hari ini"; }
+            Money {
+                value: D.safe-today;
+                exact: D.safe-today-text;
+                font-size: 26px;
+                font-weight: T.w-num;
+                letter-spacing: -0.6px;
+                color: D.safe-tone == "neg" ? T.neg : D.safe-tone == "warn" ? T.warn : T.text;
+            }
+            if D.budget-used >= 0 : VerticalLayout {
+                spacing: 6px;
+                Bar {
+                    value: D.budget-used;
+                    thickness: 6px;
+                    tint: D.budget-used > 1 ? T.neg : D.budget-used > 0.85 ? T.warn : T.accent;
+                }
+                Label { text: "Anggaran terpakai " + round(min(D.budget-used, 9.99) * 100) + "%"; }
+            }
+            if D.budget-used < 0 : Label { text: "Buat anggaran agar lebih akurat"; }
+        }
+    }
+}
+
+component TrendChart inherits Card {
+    property <int> hi: -1;
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        HorizontalLayout {
+            spacing: 16px;
+            TileTitle { text: "Pengeluaran"; vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
+            HorizontalLayout {
+                spacing: 6px;
+                Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: T.chart-out; }
+                Label { text: "periode ini"; vertical-alignment: center; }
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                Rectangle { y: (parent.height - 2px) / 2; width: 14px; height: 2px; border-radius: 1px; background: T.warn; }
+                Label { text: D.line-label; vertical-alignment: center; }
+            }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            // y axis
+            VerticalLayout {
+                width: 44px;
+                padding-bottom: 22px;
+                Label { text: D.p-max-text; horizontal-alignment: right; }
+                Rectangle { vertical-stretch: 1; }
+                Label { text: D.p-mid-text; horizontal-alignment: right; }
+                Rectangle { vertical-stretch: 1; }
+                Label { text: D.p-max-text != "" ? "0" : ""; horizontal-alignment: right; }
+            }
+            plot := Rectangle {
+                height: 220px;
+                property <int> n: D.p-buckets.length;
+                property <length> gap: n > 20 ? 3px : 10px;
+                property <length> cw: (self.width - self.gap * max(0, n - 1)) / max(1, n);
+                property <length> ph: self.height - 22px;
+                for g in [0, 0.5, 1] : Rectangle {
+                    y: (plot.ph - 1px) * g + 6px;
+                    height: 1px;
+                    background: g == 1 ? T.line-strong : T.line;
+                }
+                for b[i] in D.p-buckets : Rectangle {
+                    x: i * (plot.cw + plot.gap);
+                    width: plot.cw;
+                    property <float> k: 0;
+                    init => { k = 1; }
+                    animate k { duration: T.motion ? 650ms : 0ms; delay: T.motion ? min(i, 30) * 16ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                    Rectangle {
+                        x: 0;
+                        y: 0;
+                        height: plot.ph + 6px;
+                        border-radius: 4px;
+                        background: root.hi == i ? T.tonal : transparent;
+                    }
+                    Rectangle {
+                        x: (parent.width - self.width) / 2;
+                        width: min(parent.width * 0.64, 28px);
+                        height: plot.ph * b.exp * parent.k;
+                        y: plot.ph + 6px - self.height;
+                        border-radius: 3px;
+                        background: b.current ? T.accent : b.future ? T.tonal2 : T.chart-out.with-alpha(root.hi == i ? 1 : 0.82);
+                    }
+                    Text {
+                        y: plot.ph + 10px;
+                        width: parent.width + 10px;
+                        x: -5px;
+                        text: b.label;
+                        horizontal-alignment: center;
+                        font-size: 11px;
+                        color: b.current ? T.text : T.text3;
+                        font-weight: b.current ? 600 : 400;
+                        visible: D.p-buckets.length <= 16 || mod(i, 5) == 0 || b.current;
+                    }
+                    TouchArea {
+                        changed has-hover => {
+                            if (self.has-hover) {
+                                root.hi = i;
+                            } else if (root.hi == i) {
+                                root.hi = -1;
+                            }
+                        }
+                    }
+                }
+                // previous period as one continuous line on the same scale
+                if D.p-prev-path != "" : Rectangle {
+                    y: 6px;
+                    height: plot.ph;
+                    Path {
+                        width: 100%;
+                        height: 100%;
+                        viewbox-width: self.width / 1px;
+                        viewbox-height: self.height / 1px;
+                        commands: Api.fit(D.p-prev-path, self.width / 1px, self.height / 1px);
+                        stroke: T.warn;
+                        stroke-width: 1.75px;
+                        fill: transparent;
+                    }
+                }
+                if root.hi >= 0 && root.hi < D.p-buckets.length : Rectangle {
+                    property <length> cx: root.hi * (plot.cw + plot.gap) + plot.cw / 2;
+                    x: max(0px, min(plot.width - self.width, self.cx - self.width / 2));
+                    y: 0;
+                    width: tip.preferred-width + 24px;
+                    height: tip.preferred-height + 16px;
+                    border-radius: T.r-inner;
+                    background: T.inverse;
+                    tip := VerticalLayout {
+                        x: 12px;
+                        y: 8px;
+                        spacing: 2px;
+                        Text { text: D.p-buckets[root.hi].label; font-size: T.fs-cap; font-weight: 600; color: T.on-inverse; }
+                        Text { text: "Keluar " + D.p-buckets[root.hi].exp-text; font-size: T.fs-cap; color: T.on-inverse; }
+                        Text { text: D.line-label + " " + D.p-buckets[root.hi].prev-text; font-size: T.fs-cap; color: T.on-inverse; }
+                    }
+                }
+            }
+        }
+    }
+}
+
+component Actions inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 10px;
+        alignment: start;
+        HorizontalLayout {
+            TileTitle { text: "Perlu dilakukan"; }
+            if D.actions.length > 0 : Text {
+                text: D.actions.length;
+                horizontal-alignment: right;
+                font-size: T.fs-cap;
+                font-weight: 600;
+                color: T.text3;
+            }
+        }
+        if D.actions.length == 0 : VerticalLayout {
+            padding-top: 16px;
+            spacing: 8px;
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 44px;
+                    height: 44px;
+                    border-radius: T.r-badge;
+                    background: T.accent-soft;
+                    Icon { name: "check"; tint: T.accent; size: 22px; }
+                }
+            }
+            Text { text: "Semua beres"; horizontal-alignment: center; font-size: T.fs-body; color: T.text2; }
+        }
+        for a[i] in D.actions : Enter {
+            order: i;
+            Rectangle {
+                height: 58px;
+                border-radius: T.r-inner;
+                background: a.tone == "neg" ? T.neg-soft : a.tone == "warn" ? T.warn-soft : T.tonal;
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 8px;
+                    spacing: 10px;
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        Text { text: a.title; font-size: T.fs-body; font-weight: 500; color: T.text; overflow: elide; }
+                        Text {
+                            text: a.value;
+                            font-size: T.fs-cap;
+                            color: a.tone == "neg" ? T.neg : a.tone == "warn" ? T.warn : T.text3;
+                            overflow: elide;
+                        }
+                    }
+                    Button {
+                        y: (parent.height - self.height) / 2;
+                        compact: true;
+                        kind: "outline";
+                        label: a.button;
+                        clicked => { D.do-action(a.kind, a.id); }
+                    }
+                }
+            }
+        }
+    }
+}
+
+component CatBreakdown inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 14px;
+        alignment: start;
+        HorizontalLayout {
+            TileTitle { text: "Per kategori"; }
+            Label { text: "vs " + D.compare-label; horizontal-alignment: right; vertical-alignment: center; }
+        }
+        if D.p-slices.length == 0 : Label { text: "Belum ada pengeluaran"; }
+        if D.p-slices.length > 0 : HorizontalLayout {
+            spacing: 28px;
+            Rectangle {
+                width: 156px;
+                height: 156px;
+                property <float> k: 0;
+                init => { k = 1; }
+                animate k { duration: T.motion ? 800ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                opacity: k;
+                for s in D.p-slices : Path {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: parent.width * (0.86 + 0.14 * parent.k);
+                    height: self.width;
+                    viewbox-width: 100;
+                    viewbox-height: 100;
+                    commands: s.path;
+                    stroke: s.tint;
+                    stroke-width: self.width * 0.12;
+                    fill: transparent;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Label { text: "Total"; horizontal-alignment: center; }
+                    Text { text: D.p-total-text; horizontal-alignment: center; font-size: 17px; font-weight: T.w-num; letter-spacing: -0.3px; color: T.text; }
+                }
+            }
+            VerticalLayout {
+                spacing: 11px;
+                alignment: center;
+                for c[i] in D.p-cats : VerticalLayout {
+                    spacing: 5px;
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Rectangle { y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 2px; background: c.tint; }
+                        Text { text: c.name; font-size: T.fs-body; color: T.text; overflow: elide; vertical-alignment: center; }
+                        Text { text: c.share-text; width: 40px; horizontal-alignment: right; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+                        Text { text: c.amount-text; width: 112px; horizontal-alignment: right; font-size: T.fs-body; font-weight: 500; color: T.text; vertical-alignment: center; }
+                        Rectangle {
+                            width: 60px;
+                            Delta { x: parent.width - self.width; y: (parent.height - self.height) / 2; text: c.delta-text; tone: c.delta-tone; }
+                        }
+                    }
+                    Bar { value: c.ratio; tint: c.tint; thickness: 4px; delay: i * 40ms; }
+                }
+            }
+        }
+    }
+}
+
+component PoolTile inherits Card {
+    Ripple {
+        border-radius: T.r-card;
+        clicked => { D.page = 3; }
+    }
+    VerticalLayout {
+        padding: 20px;
+        spacing: 4px;
+        Label { text: "Total uang"; }
+        Money { value: D.pool; exact: D.pool-text; font-size: 22px; font-weight: T.w-num; letter-spacing: -0.5px; }
+        Rectangle {
+            vertical-stretch: 1;
+            min-height: 56px;
+            Reveal {
+                duration: 1000ms;
+                Path {
+                    width: 100%;
+                    height: 100%;
+                    viewbox-width: self.width / 1px;
+                    viewbox-height: self.height / 1px;
+                    commands: Api.fit(D.pool-area, self.width / 1px, self.height / 1px);
+                    fill: T.accent.with-alpha(T.dark ? 0.18 : 0.08);
+                    stroke: transparent;
+                }
+                Path {
+                    width: 100%;
+                    height: 100%;
+                    viewbox-width: self.width / 1px;
+                    viewbox-height: self.height / 1px;
+                    commands: Api.fit(D.pool-line, self.width / 1px, self.height / 1px);
+                    stroke: T.accent;
+                    stroke-width: 2px;
+                    fill: transparent;
+                }
+            }
+        }
+        HorizontalLayout {
+            Label { text: "30 hari"; }
+            Delta { text: D.pool-change-text; tone: D.pool-change-tone; }
+        }
+    }
+}
+
+component BudgetTile inherits Card {
+    Ripple {
+        border-radius: T.r-card;
+        clicked => { D.page = 5; }
+    }
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        alignment: start;
+        HorizontalLayout {
+            TileTitle { text: "Anggaran bulan ini"; }
+            Label { text: D.month-label; horizontal-alignment: right; vertical-alignment: center; }
+        }
+        if D.cat-stats.length == 0 : Label { text: "Belum ada anggaran"; }
+        for c[i] in D.cat-stats : VerticalLayout {
+            spacing: 6px;
+            visible: i < 5;
+            height: i < 5 ? self.preferred-height : 0px;
+            HorizontalLayout {
+                spacing: 8px;
+                Text { text: c.name; font-size: T.fs-body; color: T.text; overflow: elide; }
+                Text {
+                    text: c.has-plan ? c.spent-text + " / " + c.planned-text : c.spent-text;
+                    horizontal-alignment: right;
+                    font-size: T.fs-cap;
+                    color: c.status == "over" ? T.neg : T.text2;
+                }
+            }
+            Bar {
+                value: c.has-plan ? c.ratio : c.share;
+                ghost: c.has-plan ? c.proj-ratio : 0;
+                thickness: 6px;
+                delay: i * 40ms;
+                tint: c.status == "over" ? T.neg : c.status == "risk" || c.status == "watch" ? T.warn : T.accent;
+            }
+        }
+    }
+}
+
+component DebtTile inherits Card {
+    Ripple {
+        border-radius: T.r-card;
+        clicked => { D.page = 7; }
+    }
+    VerticalLayout {
+        alignment: space-between;
+        padding: 20px;
+        spacing: 10px;
+        Label { text: "Hutang"; }
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Ring {
+                size: 56px;
+                thickness: 11;
+                value: D.debt-progress;
+                tint: T.accent;
+                Text { text: round(D.debt-progress * 100) + "%"; font-size: 12px; font-weight: 600; color: T.text; }
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+                Money { value: D.debt-balance; exact: D.debt-balance-text; font-size: 18px; font-weight: T.w-num; letter-spacing: -0.3px; }
+                Label { text: "sisa"; }
+            }
+        }
+        HorizontalLayout {
+            Label { text: "Cicilan bulan ini"; }
+            Text { text: D.inst-month-text; horizontal-alignment: right; font-size: T.fs-cap; font-weight: 600; color: T.text; }
+        }
+    }
+}
+
+component InsightTile inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 8px;
+        alignment: start;
+        TileTitle { text: "Wawasan"; }
+        if D.insights.length == 0 : Label { text: "Belum ada pola menonjol"; }
+        for it[i] in D.insights : Enter {
+            order: i;
+            HorizontalLayout {
+                spacing: 10px;
+                height: 34px;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    width: 26px;
+                    height: 26px;
+                    border-radius: T.r-xs;
+                    background: it.tone == "bad" ? T.neg-soft : it.tone == "warn" ? T.warn-soft : it.tone == "good" ? T.pos-soft : T.tonal;
+                    Icon {
+                        name: it.tone == "bad" || it.tone == "warn" ? "alert" : it.tone == "good" ? "check" : "bulb";
+                        size: 14px;
+                        tint: it.tone == "bad" ? T.neg : it.tone == "warn" ? T.warn : it.tone == "good" ? T.pos : T.text2;
+                    }
+                }
+                Text { text: it.title; font-size: T.fs-body; color: T.text; vertical-alignment: center; overflow: elide; }
+            }
+        }
+    }
+}
+
+component RecentTile inherits Card {
+    VerticalLayout {
+        padding: 14px;
+        padding-top: 18px;
+        spacing: 2px;
+        alignment: start;
+        HorizontalLayout {
+            padding-left: 6px;
+            padding-bottom: 4px;
+            TileTitle { text: "Terakhir"; vertical-alignment: center; }
+            Button { kind: "text"; compact: true; label: "Semua"; clicked => { D.page = 2; } }
+        }
+        if D.recent.length == 0 : Label { x: 6px; text: "Belum ada"; }
+        for r[i] in D.recent : TxLine {
+            tx: r;
+            order: i;
+            visible: i < 5;
+            height: i < 5 ? 56px : 0px;
+            open(row) => { D.tx-open(row); }
+        }
+    }
+}
+
+export component OverviewPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 22px;
+        spacing: 16px;
+        alignment: start;
+
+        PeriodBar { }
+
+        if !D.has-data : Card {
+            HorizontalLayout {
+                padding: 20px;
+                spacing: 12px;
+                Text { text: "Catat pengeluaran dengan Cmd K, pemasukan dengan Cmd I"; font-size: T.fs-body; color: T.text2; vertical-alignment: center; }
+                Button { y: (parent.height - self.height) / 2; kind: "tonal"; label: "Isi data contoh"; clicked => { D.seed-demo(); } }
+            }
+        }
+
+        GridLayout {
+            spacing: 14px;
+            Hero { row: 0; col: 0; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            StatusTile { row: 0; col: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            SafeTile { row: 0; col: 3; preferred-width: 10px; horizontal-stretch: 1; }
+
+            TrendChart { row: 1; col: 0; colspan: 3; preferred-width: 10px; horizontal-stretch: 1; }
+            Actions { row: 1; col: 3; rowspan: 2; preferred-width: 10px; horizontal-stretch: 1; min-width: 290px; }
+
+            CatBreakdown { row: 2; col: 0; colspan: 3; preferred-width: 10px; horizontal-stretch: 1; }
+
+            PoolTile { row: 3; col: 0; preferred-width: 10px; horizontal-stretch: 1; }
+            BudgetTile { row: 3; col: 1; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            DebtTile { row: 3; col: 3; preferred-width: 10px; horizontal-stretch: 1; }
+
+            InsightTile { row: 4; col: 0; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            RecentTile { row: 4; col: 2; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+        }
+    }
+}

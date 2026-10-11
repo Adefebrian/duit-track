@@ -1,0 +1,330 @@
+export struct CatOpt {
+    id: int,
+    name: string,
+    kind: string,
+    icon: string,
+    tint: color,
+    keywords: string,
+}
+
+export struct TxRow {
+    // header rows group the list by day
+    header: bool,
+    header-text: string,
+    header-total: string,
+    id: int,
+    kind: string,
+    note: string,
+    cat-id: int,
+    cat-name: string,
+    icon: string,
+    tint: color,
+    amount-text: string,
+    amount-raw: string,
+    date: string,
+    date-text: string,
+    tag: string,
+    acc-id: int,
+}
+
+export struct CatStat {
+    id: int,
+    name: string,
+    icon: string,
+    tint: color,
+    planned-text: string,
+    spent-text: string,
+    projected-text: string,
+    ratio: float,
+    proj-ratio: float,
+    status: string,
+    share: float,
+    has-plan: bool,
+}
+
+export struct InsightRow {
+    tone: string,
+    title: string,
+    body: string,
+}
+
+export struct DueRow {
+    id: int,
+    kind: string,
+    name: string,
+    amount-text: string,
+    date-text: string,
+    overdue: bool,
+}
+
+export struct BarDatum {
+    label: string,
+    a: float,
+    b: float,
+    a-text: string,
+    b-text: string,
+    current: bool,
+}
+
+export struct BudgetRow {
+    cat-id: int,
+    name: string,
+    icon: string,
+    tint: color,
+    planned-raw: string,
+    planned-text: string,
+    spent-text: string,
+    ratio: float,
+    remaining-text: string,
+    over: bool,
+    suggested: int,
+    suggested-text: string,
+    hint: string,
+}
+
+export struct InstSeg {
+    // paid | late | due | upcoming
+    status: string,
+}
+
+export struct SchedRow {
+    n: int,
+    date-text: string,
+    amount-text: string,
+    status: string,
+}
+
+export struct DebtRow {
+    id: int,
+    name: string,
+    lender: string,
+    balance: float,
+    balance-text: string,
+    start-text: string,
+    paid-text: string,
+    progress: float,
+    apr-text: string,
+    min-text: string,
+    due-text: string,
+    days-to-due: int,
+    payoff-text: string,
+    interest-text: string,
+    settled: bool,
+    trapped: bool,
+    // edit form seeds
+    raw-start: string,
+    raw-apr: string,
+    raw-min: string,
+    raw-due: string,
+    raw-lender: string,
+    tint: color,
+    is-inst: bool,
+    tenor: int,
+    paid-n: int,
+    next-text: string,
+    segs: [InstSeg],
+    sched: [SchedRow],
+}
+
+export struct Seg {
+    start: float,
+    len: float,
+    tint: color,
+}
+
+export struct LoadBar {
+    label: string,
+    total-text: string,
+    segs: [Seg],
+    current: bool,
+}
+
+export struct LegendItem {
+    name: string,
+    tint: color,
+    value-text: string,
+}
+
+export struct Slice {
+    name: string,
+    tint: color,
+    path: string,
+    share-text: string,
+    amount-text: string,
+}
+
+export struct AccOpt {
+    id: int,
+    name: string,
+    kind: string,
+    icon: string,
+    tint: color,
+}
+
+export struct AccRow {
+    id: int,
+    name: string,
+    kind: string,
+    kind-label: string,
+    icon: string,
+    tint: color,
+    balance: float,
+    balance-text: string,
+    raw-balance: string,
+    in-text: string,
+    out-text: string,
+    share: float,
+    is-default: bool,
+    keywords: string,
+    negative: bool,
+}
+
+export struct TransferRow {
+    id: int,
+    from-name: string,
+    to-name: string,
+    amount-text: string,
+    date-text: string,
+    note: string,
+}
+
+export struct PaymentRow {
+    id: int,
+    kind: string,
+    amount-text: string,
+    date-text: string,
+    note: string,
+}
+
+export struct PlanOpt {
+    key: string,
+    label: string,
+    months-text: string,
+    interest-text: string,
+    payoff-text: string,
+    order-text: string,
+    feasible: bool,
+    recommended: bool,
+    path: string,
+    tint: color,
+}
+
+export struct RecRow {
+    id: int,
+    kind: string,
+    name: string,
+    amount-text: string,
+    amount-raw: string,
+    day: int,
+    cat-id: int,
+    cat-name: string,
+    icon: string,
+    tint: color,
+    posted: bool,
+    acc-id: int,
+}
+
+export struct HealthPart {
+    name: string,
+    score: float,
+    max: float,
+    detail: string,
+}
+
+export struct TrendRow {
+    name: string,
+    tint: color,
+    path: string,
+    total-text: string,
+    change-text: string,
+    change-tone: string,
+}
+
+export struct TopRow {
+    name: string,
+    amount-text: string,
+    count-text: string,
+    ratio: float,
+}
+
+export struct Parsed {
+    valid: bool,
+    kind: string,
+    amount-text: string,
+    amount-raw: string,
+    assumed: bool,
+    date: string,
+    date-text: string,
+    note: string,
+    cat-id: int,
+    cat-name: string,
+    icon: string,
+    tint: color,
+    confidence: float,
+    acc-id: int,
+    acc-name: string,
+}
+
+export struct PBucket {
+    label: string,
+    inc: float,
+    exp: float,
+    prev: float,
+    current: bool,
+    future: bool,
+    inc-text: string,
+    exp-text: string,
+    prev-text: string,
+}
+
+export struct PCat {
+    name: string,
+    tint: color,
+    icon: string,
+    amount-text: string,
+    ratio: float,
+    share-text: string,
+    delta-text: string,
+    delta-tone: string,
+}
+
+export struct ActionRow {
+    kind: string,
+    id: int,
+    title: string,
+    value: string,
+    tone: string,
+    button: string,
+}
+
+export struct GoalRow {
+    id: int,
+    name: string,
+    icon: string,
+    tint: color,
+    saved: float,
+    saved-text: string,
+    target-text: string,
+    remaining-text: string,
+    progress: float,
+    deadline-text: string,
+    days-left-text: string,
+    per-day-text: string,
+    per-week-text: string,
+    per-month-text: string,
+    freq: int,
+    status: string,
+    status-text: string,
+    status-tone: string,
+    projected-text: string,
+    raw-target: string,
+    raw-deadline: string,
+}
+
+export struct GoalEntryRow {
+    id: int,
+    amount-text: string,
+    positive: bool,
+    date-text: string,
+    note: string,
+}

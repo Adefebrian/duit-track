@@ -1,0 +1,6 @@
+/target
+/dist
+.DS_Store
+*.db
+*.db-wal
+*.db-shm

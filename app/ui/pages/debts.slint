@@ -1,0 +1,368 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { DebtRow } from "../types.slint";
+import { Icon, IconButton, Button, Card, Pill, Ring, Reveal, Enter, SectionTitle, EmptyState, Ripple, Money, Slider, Segmented } from "../components.slint";
+import { PageHeader } from "../shared.slint";
+
+// N rounded segments, one per installment, colored by status.
+component InstBar inherits HorizontalLayout {
+    in property <DebtRow> debt;
+    height: 8px;
+    spacing: 3px;
+    for s[i] in debt.segs : Rectangle {
+        property <float> k: 0;
+        init => { k = 1; }
+        animate k { duration: T.motion ? 360ms : 0ms; delay: T.motion ? i * 60ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+        border-radius: 4px;
+        background: T.tonal2;
+        Rectangle {
+            x: 0;
+            width: parent.width * parent.k;
+            border-radius: 4px;
+            background: s.status == "paid" ? debt.tint : s.status == "late" ? T.neg : s.status == "due" ? T.warn : transparent;
+        }
+    }
+}
+
+component DebtCard inherits Card {
+    in property <DebtRow> debt;
+    in property <int> order;
+    Ripple {
+        border-radius: T.r-lg;
+        clicked => { D.debt-open(debt.id); }
+    }
+    Enter {
+        order: root.order;
+        HorizontalLayout {
+            padding: 20px;
+            spacing: 18px;
+            Ring {
+                y: (parent.height - self.height) / 2;
+                size: 76px;
+                value: debt.progress;
+                tint: debt.trapped ? T.neg : debt.tint;
+                Text {
+                    text: debt.is-inst ? debt.paid-n + "/" + debt.tenor : round(debt.progress * 100) + "%";
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: T.text;
+                }
+            }
+            VerticalLayout {
+                spacing: 8px;
+                alignment: center;
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    Text { text: debt.name; font-size: T.fs-head; font-weight: 600; color: T.text; overflow: elide; vertical-alignment: center; }
+                    Pill { text: debt.is-inst ? "Cicilan" : "Fleksibel"; }
+                    if debt.settled : Pill { text: "Lunas"; tone: "pos"; }
+                    if !debt.settled && debt.trapped : Pill { text: "Bunga > cicilan"; tone: "neg"; }
+                    if !debt.settled && !debt.trapped && debt.days-to-due <= 5 : Pill {
+                        text: debt.days-to-due <= 0 ? "Hari ini" : debt.days-to-due + " hari lagi";
+                        tone: "warn";
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    alignment: start;
+                    Money { value: debt.balance; exact: debt.balance-text; font-size: 20px; font-weight: 600; }
+                    VerticalLayout {
+                        alignment: end;
+                        padding-bottom: 4px;
+                        Text { text: "dari " + debt.start-text; font-size: T.fs-cap; color: T.text3; }
+                    }
+                }
+                if debt.is-inst : InstBar { debt: debt; }
+                Text {
+                    text: debt.lender + (debt.lender != "" ? ", " : "") + debt.next-text;
+                    font-size: T.fs-cap + 0.5px;
+                    color: T.text2;
+                    overflow: elide;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                if !debt.settled : Button {
+                    compact: true;
+                    label: "Bayar";
+                    clicked => { D.pay-open(debt.id); }
+                }
+            }
+        }
+    }
+}
+
+// Stacked monthly obligations: when does the burden drop?
+component LoadChart inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 14px;
+        HorizontalLayout {
+            SectionTitle { text: "Beban cicilan per bulan"; }
+            Text { text: D.load-drop-text; horizontal-alignment: right; font-size: T.fs-cap + 0.5px; color: T.pos; font-weight: 600; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 14px;
+            alignment: start;
+            for l in D.load-legend : HorizontalLayout {
+                spacing: 6px;
+                Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: l.tint; }
+                Text { text: l.name; font-size: T.fs-cap; color: T.text2; vertical-alignment: center; }
+            }
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            height: 220px;
+            for b[i] in D.load-bars : VerticalLayout {
+                spacing: 6px;
+                Text {
+                    text: b.total-text;
+                    horizontal-alignment: center;
+                    font-size: T.fs-cap;
+                    font-weight: b.current ? 700 : 500;
+                    color: b.current ? T.text : T.text2;
+                    overflow: elide;
+                }
+                Rectangle {
+                    vertical-stretch: 1;
+                    property <float> k: 0;
+                    init => { k = 1; }
+                    animate k { duration: T.motion ? 700ms : 0ms; delay: T.motion ? i * 55ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                    property <length> bw: min(44px, self.width);
+                    for s in b.segs : Rectangle {
+                        x: (parent.width - parent.bw) / 2;
+                        width: parent.bw;
+                        y: parent.height - parent.height * (s.start + s.len) * parent.k + 1px;
+                        height: max(0px, parent.height * s.len * parent.k - 2px);
+                        border-radius: 4px;
+                        background: s.tint;
+                    }
+                }
+                Text {
+                    text: b.label;
+                    horizontal-alignment: center;
+                    font-size: T.fs-cap;
+                    font-weight: b.current ? 700 : 400;
+                    color: b.current ? T.text : T.text3;
+                }
+            }
+        }
+    }
+}
+
+component InstSchedule inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        SectionTitle { text: "Jadwal cicilan"; }
+        if D.inst-rows.length == 0 : Text { text: "Belum ada cicilan tetap"; font-size: T.fs-body; color: T.text3; }
+        for d[i] in D.inst-rows : Enter {
+            order: i;
+            VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: d.tint; }
+                    Text { horizontal-stretch: 0; text: d.name; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; vertical-alignment: center; }
+                    Text { horizontal-stretch: 0; text: d.lender; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+                    Text {
+                        horizontal-stretch: 1;
+                        text: d.paid-n + " dari " + d.tenor;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                        font-size: T.fs-body;
+                        font-weight: 600;
+                        color: T.text;
+                    }
+                }
+                // one cell per installment with its month
+                HorizontalLayout {
+                    spacing: 6px;
+                    for r in d.sched : Rectangle {
+                        height: 46px;
+                        border-radius: T.r-sm;
+                        background: r.status == "paid" ? d.tint.with-alpha(T.dark ? 0.28 : 0.16) : r.status == "late" ? T.neg-soft : r.status == "due" ? T.warn-soft : T.tonal;
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 1px;
+                            Text {
+                                text: r.n;
+                                horizontal-alignment: center;
+                                font-size: T.fs-body;
+                                font-weight: 600;
+                                color: r.status == "paid" ? d.tint : r.status == "late" ? T.neg : r.status == "due" ? T.warn : T.text2;
+                            }
+                            Text { text: r.date-text; horizontal-alignment: center; font-size: 10.5px; color: T.text3; overflow: elide; }
+                        }
+                    }
+                }
+                Text { text: d.next-text; font-size: T.fs-cap + 0.5px; color: T.text2; }
+            }
+        }
+    }
+}
+
+component Planner inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        SectionTitle { text: "Strategi pelunasan"; }
+        HorizontalLayout {
+            spacing: 16px;
+            VerticalLayout {
+                alignment: center;
+                Text { text: "Setoran tambahan / bulan"; font-size: T.fs-cap + 0.5px; color: T.text2; }
+                Text { text: D.plan-extra-text; font-size: 20px; font-weight: 600; color: T.accent; }
+            }
+            Slider {
+                y: (parent.height - self.height) / 2;
+                horizontal-stretch: 1;
+                minimum: 0;
+                maximum: D.plan-extra-max;
+                value <=> D.plan-extra;
+                changed(v) => { D.plan-changed(v); }
+            }
+            Text { text: D.plan-max-text; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 12px;
+            for p[i] in D.plan : Rectangle {
+                horizontal-stretch: 1;
+                border-radius: T.r-md;
+                background: p.recommended ? T.accent-soft : T.tonal;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 4px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: p.tint; }
+                        Text { text: p.label; font-size: T.fs-body; font-weight: 600; color: T.text; vertical-alignment: center; }
+                        if p.recommended : Pill { text: "Terbaik"; tone: "accent"; }
+                    }
+                    Text { text: p.months-text; font-size: 20px; font-weight: 600; color: p.feasible ? T.text : T.neg; }
+                    Text { text: "Lunas " + p.payoff-text; font-size: T.fs-cap + 0.5px; color: T.text2; }
+                    Text { text: "Bunga " + p.interest-text; font-size: T.fs-cap + 0.5px; color: T.text2; }
+                }
+            }
+        }
+        Rectangle {
+            height: 170px;
+            for g in [0, 0.5, 1] : Rectangle {
+                y: (parent.height - 1px) * g;
+                height: 1px;
+                background: T.line;
+            }
+            for p in D.plan : Reveal {
+                duration: 1000ms;
+                Path {
+                    width: 100%;
+                    height: 100%;
+                    viewbox-width: self.width / 1px;
+                    viewbox-height: self.height / 1px;
+                    commands: Api.fit(p.path, self.width / 1px, self.height / 1px);
+                    stroke: p.tint;
+                    stroke-width: p.recommended ? 3px : 2px;
+                    fill: transparent;
+                }
+            }
+        }
+        Rectangle {
+            border-radius: T.r-md;
+            background: T.tonal;
+            HorizontalLayout {
+                padding: 12px;
+                spacing: 10px;
+                Icon { name: "bulb"; tint: T.accent; }
+                Text { text: D.plan-message; font-size: T.fs-body; color: T.text; wrap: word-wrap; }
+            }
+        }
+    }
+}
+
+export component DebtsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Hutang";
+            month: false;
+            Segmented {
+                y: (parent.height - self.height) / 2;
+                width: 300px;
+                items: ["Daftar", "Cicilan", "Strategi"];
+                index <=> D.debt-tab;
+            }
+            Button {
+                y: (parent.height - self.height) / 2;
+                icon: "plus";
+                label: "Tambah";
+                clicked => { D.debt-new(); }
+            }
+        }
+
+        if D.debts.length == 0 : Card {
+            EmptyState {
+                icon: "debt";
+                title: "Belum ada hutang";
+                body: "Cicilan, paylater, kartu kredit, atau pinjaman keluarga.";
+            }
+        }
+
+        // Summary band, shared by all tabs
+        if D.debts.length > 0 : HorizontalLayout {
+            spacing: 14px;
+            Card {
+                horizontal-stretch: 1.3;
+                HorizontalLayout {
+                    padding: 20px;
+                    spacing: 18px;
+                    Ring {
+                        y: (parent.height - self.height) / 2;
+                        size: 84px;
+                        value: D.d-progress;
+                        tint: T.pos;
+                        Text { text: round(D.d-progress * 100) + "%"; font-size: 17px; font-weight: 600; color: T.text; }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 2px;
+                        Text { text: "Sisa hutang"; font-size: T.fs-cap; color: T.text3; }
+                        Text { text: D.d-total-text; font-size: 26px; font-weight: 600; color: T.text; }
+                        Text { text: "Terbayar " + D.d-paid-text; font-size: T.fs-body; color: T.pos; }
+                    }
+                }
+            }
+            Card {
+                horizontal-stretch: 1;
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 2px;
+                    alignment: center;
+                    Text { text: "Cicilan bulan ini"; font-size: T.fs-cap; color: T.text3; }
+                    Text { text: D.load-now-text; font-size: 22px; font-weight: 600; color: T.text; }
+                    Text { text: "Bunga " + D.d-interest-text + " / bulan"; font-size: T.fs-cap + 0.5px; color: T.text2; }
+                }
+            }
+        }
+
+        if D.debts.length > 0 && D.debt-tab == 0 : VerticalLayout {
+            spacing: 14px;
+            for d[i] in D.debts : DebtCard { debt: d; order: i; }
+        }
+        if D.debts.length > 0 && D.debt-tab == 1 : VerticalLayout {
+            spacing: 14px;
+            LoadChart { }
+            InstSchedule { }
+        }
+        if D.debts.length > 0 && D.debt-tab == 2 : Planner { }
+    }
+}

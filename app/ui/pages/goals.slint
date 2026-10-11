@@ -1,0 +1,336 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { GoalRow } from "../types.slint";
+import { Icon, IconButton, Button, Card, Pill, Bar, Ring, Reveal, Enter, Segmented, CatBadge, Ripple, Money, EmptyState } from "../components.slint";
+import { PageHeader } from "../shared.slint";
+
+component Label inherits Text {
+    font-size: T.fs-cap;
+    color: T.text3;
+    overflow: elide;
+}
+
+component TileTitle inherits Text {
+    font-size: 14px;
+    font-weight: T.w-title;
+    color: T.text;
+    overflow: elide;
+}
+
+// Selectable plan card in the top strip.
+component GoalCard inherits Rectangle {
+    in property <GoalRow> goal;
+    in property <bool> selected;
+    height: 112px;
+    border-radius: T.r-card;
+    background: T.bg;
+    border-width: selected ? 2px : 1px;
+    border-color: selected ? goal.tint : T.line;
+    animate border-color { duration: T.motion ? T.d-fast : 0ms; }
+    Ripple {
+        border-radius: T.r-card;
+        clicked => { D.goal-select(goal.id); }
+    }
+    VerticalLayout {
+        padding: 18px;
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 10px;
+            CatBadge { icon: goal.icon; tint: goal.tint; size: 30px; }
+            Text { text: goal.name; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; vertical-alignment: center; overflow: elide; }
+            Text { text: round(goal.progress * 100) + "%"; horizontal-alignment: right; vertical-alignment: center; font-size: T.fs-body; font-weight: 600; color: T.text2; }
+        }
+        Bar { value: goal.progress; tint: goal.tint; thickness: 6px; }
+        HorizontalLayout {
+            Label { text: goal.saved-text + " / " + goal.target-text; }
+            Label { text: goal.days-left-text; horizontal-alignment: right; }
+        }
+    }
+}
+
+component GoalHero inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        HorizontalLayout {
+            spacing: 10px;
+            CatBadge { icon: D.goal-current.icon; tint: D.goal-current.tint; size: 34px; }
+            Text { text: D.goal-current.name; font-size: 17px; font-weight: T.w-title; color: T.text; vertical-alignment: center; overflow: elide; }
+            Pill { y: (parent.height - self.height) / 2; text: D.goal-current.status-text; tone: D.goal-current.status-tone; }
+            Rectangle { horizontal-stretch: 1; }
+            IconButton { y: (parent.height - self.height) / 2; icon: "edit"; clicked => { D.goal-edit(); } }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+            Money { value: D.goal-current.saved; exact: D.goal-current.saved-text; font-size: 36px; font-weight: T.w-num; letter-spacing: -1px; }
+            // sit on the big number's baseline, not under its line box
+            VerticalLayout {
+                alignment: end;
+                padding-bottom: 8px;
+                Text { text: "dari " + D.goal-current.target-text; font-size: T.fs-body; color: T.text3; }
+            }
+        }
+        Bar { value: D.goal-current.progress; tint: D.goal-current.tint; thickness: 10px; }
+        HorizontalLayout {
+            spacing: 28px;
+            alignment: start;
+            VerticalLayout {
+                spacing: 3px;
+                Label { text: "Kurang"; }
+                Text { text: D.goal-current.remaining-text; font-size: 15px; font-weight: T.w-num; color: T.text; }
+            }
+            VerticalLayout {
+                spacing: 3px;
+                Label { text: "Tenggat"; }
+                Text { text: D.goal-current.deadline-text; font-size: 15px; font-weight: T.w-num; color: T.text; }
+            }
+            VerticalLayout {
+                spacing: 3px;
+                Label { text: "Ritme sekarang"; }
+                Text { text: D.goal-current.projected-text; font-size: 15px; font-weight: T.w-num; color: T.text; }
+            }
+        }
+    }
+}
+
+component PaceTile inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        alignment: space-between;
+        TileTitle { text: "Perlu nabung"; }
+        Segmented {
+            items: ["Harian", "Mingguan", "Bulanan"];
+            index: D.goal-current.freq;
+            changed(i) => { D.goal-freq(i); }
+        }
+        VerticalLayout {
+            spacing: 4px;
+            Text {
+                text: D.goal-current.freq == 0 ? D.goal-current.per-day-text : D.goal-current.freq == 1 ? D.goal-current.per-week-text : D.goal-current.per-month-text;
+                font-size: 30px;
+                font-weight: T.w-num;
+                letter-spacing: -0.8px;
+                color: D.goal-current.status-tone == "neg" ? T.neg : T.text;
+            }
+            Label { text: D.goal-current.freq == 0 ? "per hari sampai tenggat" : D.goal-current.freq == 1 ? "per minggu sampai tenggat" : "per bulan sampai tenggat"; }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            Button { fill: true; icon: "plus"; label: "Setor"; clicked => { D.entry-open(0); } }
+            Button { fill: true; kind: "outline"; label: "Tarik"; clicked => { D.entry-open(1); } }
+        }
+    }
+}
+
+component Legend inherits HorizontalLayout {
+    in property <string> text;
+    in property <color> tint;
+    in property <length> thick: 3px;
+    spacing: 6px;
+    Rectangle { y: (parent.height - root.thick) / 2; width: 14px; height: root.thick; border-radius: 1.5px; background: root.tint; }
+    Text { text: root.text; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+}
+
+component ProgressChart inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 14px;
+        HorizontalLayout {
+            spacing: 16px;
+            TileTitle { text: "Perjalanan tabungan"; vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
+            Legend { text: "terkumpul"; tint: D.goal-current.tint; }
+            Legend { text: "proyeksi"; tint: D.goal-current.tint.with-alpha(0.4); }
+            Legend { text: "jalur ideal"; tint: T.line-strong; thick: 2px; }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            VerticalLayout {
+                width: 52px;
+                padding-bottom: 24px;
+                Label { text: D.goal-ymax; horizontal-alignment: right; }
+                Rectangle { vertical-stretch: 1; }
+                Label { text: D.goal-ymid; horizontal-alignment: right; }
+                Rectangle { vertical-stretch: 1; }
+                Label { text: "0"; horizontal-alignment: right; }
+            }
+            VerticalLayout {
+                spacing: 8px;
+                plot := Rectangle {
+                    height: 196px;
+                    for g in [0, 0.5, 1] : Rectangle {
+                        y: (parent.height - 1px) * g;
+                        height: 1px;
+                        background: g == 1 ? T.line-strong : T.line;
+                    }
+                    Rectangle {
+                        x: parent.width * D.goal-today-x;
+                        width: 1px;
+                        background: T.line-strong;
+                    }
+                    Path {
+                        width: 100%;
+                        height: 100%;
+                        viewbox-width: self.width / 1px;
+                        viewbox-height: self.height / 1px;
+                        commands: Api.fit(D.goal-ideal, self.width / 1px, self.height / 1px);
+                        stroke: T.line-strong;
+                        stroke-width: 1.5px;
+                        fill: transparent;
+                    }
+                    Path {
+                        width: 100%;
+                        height: 100%;
+                        viewbox-width: self.width / 1px;
+                        viewbox-height: self.height / 1px;
+                        commands: Api.fit(D.goal-proj, self.width / 1px, self.height / 1px);
+                        stroke: D.goal-current.tint.with-alpha(0.4);
+                        stroke-width: 2px;
+                        fill: transparent;
+                    }
+                    Reveal {
+                        duration: 1000ms;
+                        Path {
+                            width: 100%;
+                            height: 100%;
+                            viewbox-width: self.width / 1px;
+                            viewbox-height: self.height / 1px;
+                            commands: Api.fit(D.goal-area, self.width / 1px, self.height / 1px);
+                            fill: D.goal-current.tint.with-alpha(T.dark ? 0.22 : 0.12);
+                            stroke: transparent;
+                        }
+                        Path {
+                            width: 100%;
+                            height: 100%;
+                            viewbox-width: self.width / 1px;
+                            viewbox-height: self.height / 1px;
+                            commands: Api.fit(D.goal-path, self.width / 1px, self.height / 1px);
+                            stroke: D.goal-current.tint;
+                            stroke-width: 2.5px;
+                            fill: transparent;
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 16px;
+                    Label { x: 0; text: D.goal-start-text; }
+                    Label { x: parent.width - self.width; text: D.goal-end-text; horizontal-alignment: right; }
+                    // "hari ini" sits under today's line, hidden when it would touch the end labels
+                    Label {
+                        property <length> cx: plot.width * D.goal-today-x;
+                        x: self.cx - self.width / 2;
+                        text: "hari ini";
+                        visible: self.cx > 110px && self.cx < parent.width - 110px;
+                    }
+                }
+            }
+        }
+        Rectangle {
+            height: 40px;
+            border-radius: T.r-inner;
+            background: D.goal-proj-tone == "neg" ? T.neg-soft : D.goal-proj-tone == "warn" ? T.warn-soft : T.accent-soft;
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 14px;
+                spacing: 10px;
+                Icon { y: (parent.height - self.height) / 2; name: "trend"; size: 16px; tint: D.goal-proj-tone == "neg" ? T.neg : D.goal-proj-tone == "warn" ? T.warn : T.accent; }
+                Text { text: D.goal-proj-text; font-size: T.fs-body; color: T.text; vertical-alignment: center; overflow: elide; }
+            }
+        }
+    }
+}
+
+component Entries inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 4px;
+        alignment: start;
+        TileTitle { text: "Riwayat setoran"; }
+        if D.goal-entries.length == 0 : Label { text: "Belum ada setoran"; }
+        for e[i] in D.goal-entries : Enter {
+            order: i;
+            HorizontalLayout {
+                height: 46px;
+                spacing: 10px;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    width: 30px;
+                    height: 30px;
+                    border-radius: T.r-badge;
+                    background: e.positive ? T.pos-soft : T.warn-soft;
+                    Icon { name: e.positive ? "arrow-down" : "arrow-up"; size: 14px; tint: e.positive ? T.pos : T.warn; }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Text { text: e.amount-text; font-size: T.fs-body; font-weight: 500; color: T.text; }
+                    Label { text: e.note != "" ? e.date-text + ", " + e.note : e.date-text; }
+                }
+                IconButton { y: (parent.height - self.height) / 2; icon: "trash"; tint: T.text3; clicked => { D.entry-delete(e.id); } }
+            }
+        }
+    }
+}
+
+export component GoalsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Rencana";
+            month: false;
+            Button {
+                y: (parent.height - self.height) / 2;
+                icon: "plus";
+                label: "Rencana baru";
+                clicked => { D.goal-new(); }
+            }
+        }
+
+        if D.goals.length == 0 : Card {
+            VerticalLayout {
+                padding-bottom: 24px;
+                EmptyState {
+                    icon: "target";
+                    title: "Belum ada rencana";
+                    body: "Trip, gadget, dana darurat. Tentukan target dan tenggat, Duitrack hitung harus nabung berapa.";
+                }
+                HorizontalLayout {
+                    alignment: center;
+                    Button { icon: "plus"; label: "Buat rencana"; clicked => { D.goal-new(); } }
+                }
+            }
+        }
+
+        // plan picker: a full row whenever possible
+        if D.goals.length > 0 : Rectangle {
+            property <int> n: D.goals.length;
+            property <int> cols: n <= 4 ? max(n, 1) : (mod(n, 3) == 1 ? 4 : 3);
+            property <length> cw: (self.width - 14px * (cols - 1)) / cols;
+            height: ceil(n / cols) * 126px - 14px;
+            for g[i] in D.goals : GoalCard {
+                x: mod(i, parent.cols) * (parent.cw + 14px);
+                y: floor(i / parent.cols) * 126px;
+                width: parent.cw;
+                goal: g;
+                selected: g.id == D.goal-current.id;
+            }
+        }
+
+        if D.has-goal : GridLayout {
+            spacing: 14px;
+            GoalHero { row: 0; col: 0; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            PaceTile { row: 0; col: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            ProgressChart { row: 1; col: 0; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            Entries { row: 1; col: 2; preferred-width: 10px; horizontal-stretch: 1; }
+        }
+    }
+}

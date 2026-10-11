@@ -1,0 +1,22 @@
+[package]
+name = "duitrack"
+version = "0.1.0"
+edition = "2021"
+description = "Duitrack: personal finance tracker, offline-first"
+authors = ["Brian <adefebrianpro@gmail.com>"]
+homepage = "https://adefebrian.com"
+repository = "https://github.com/adefebrian/duit-track"
+
+[features]
+# Dev only: `--snap out.png` renders the window to a PNG and exits.
+snap = ["dep:png"]
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+moneycore = { path = "../crates/moneycore" }
+png = { version = "0.18.1", optional = true }
+rfd = "0.17.2"
+slint = "1.18.1"
+
+[build-dependencies]
+slint-build = "1.18.1"

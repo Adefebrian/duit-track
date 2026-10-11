@@ -1,0 +1,101 @@
+import { Palette } from "std-widgets.slint";
+
+// Duitrack design tokens. White-first, tonal depth instead of shadows,
+// hairline borders, one blue accent, semantic green/red/amber.
+// Every color has a light and a night value; components only read tokens.
+
+export global T {
+    // 0 light (default), 1 night, 2 follow macOS
+    in-out property <int> theme-mode: 0;
+    out property <bool> dark: theme-mode == 1 || (theme-mode == 2 && Palette.color-scheme == ColorScheme.dark);
+
+    // surfaces: broken-white page, white cards, warm tonal layers
+    out property <color> page: dark ? #0E110F : #F6F5F1;
+    out property <color> bg: dark ? #151A17 : #FFFFFF;
+    out property <color> sidebar: dark ? #111512 : #EFEEE9;
+    out property <color> tonal: dark ? #1A201C : #F3F2EE;
+    out property <color> tonal2: dark ? #242B26 : #E9E7E1;
+    out property <color> line: dark ? #252C27 : #E7E4DC;
+    out property <color> line-strong: dark ? #353D37 : #D5D1C6;
+    // text
+    out property <color> text: dark ? #ECEFEA : #171B18;
+    out property <color> text2: dark ? #A6ADA7 : #545B56;
+    out property <color> text3: dark ? #8F978F : #686E68;
+    out property <color> on-accent: dark ? #0C1A12 : #FFFFFF;
+    // accent: dark green. semantic colors follow financial condition.
+    out property <color> accent: dark ? #5DB386 : #1E5B3F;
+    out property <color> accent-soft: dark ? #18291F : #E5EEE8;
+    out property <color> accent-line: dark ? #2E5240 : #B9D1C2;
+    out property <color> pos: dark ? #5DB386 : #276B46;
+    out property <color> pos-soft: dark ? #18291F : #E6F1EA;
+    out property <color> neg: dark ? #EC6B5E : #A83A2F;
+    out property <color> neg-soft: dark ? #2D1A17 : #F8E9E6;
+    out property <color> warn: dark ? #E2A64A : #8A5C10;
+    out property <color> warn-soft: dark ? #2B2214 : #F6EEDD;
+    // user-pickable colors for categories and money sources (mirrors Rust PALETTE)
+    out property <[color]> palette: [#1E5B3F, #2E7D52, #6E8B5C, #6B7B3A, #2F7A74, #3E6E8E, #2F5D8A, #55605A, #8A6A4B, #B08A2E, #C4703D, #A0613A, #B9534B, #A8566F];
+    // chart neutrals
+    out property <color> chart-in: dark ? #5DB386 : #2E7D52;
+    out property <color> chart-out: dark ? #C9D1CB : #2B312D;
+    out property <color> chart-prev: dark ? #3A423C : #D5D1C6;
+    // inverse surface for toasts and tooltips
+    out property <color> inverse: dark ? #ECEFEA : #171B18;
+    out property <color> on-inverse: dark ? #171B18 : #FFFFFF;
+    out property <color> inverse-accent: dark ? #1E5B3F : #9FD3B3;
+    out property <color> scrim: dark ? #000000 : #171B18;
+    // state layers (Material): hover and press tint over a surface
+    out property <color> hover: dark ? #FFFFFF0D : #0B12200A;
+    out property <color> press: dark ? #FFFFFF1A : #0B122014;
+    // shape: one radius per element role, used everywhere
+    out property <length> r-card: 16px;
+    out property <length> r-inner: 12px;
+    out property <length> r-control: 10px;
+    out property <length> r-badge: 10px;
+    // one height for every control: inputs, buttons, segmented, steppers
+    out property <length> h-control: 36px;
+    out property <length> h-compact: 36px;
+    out property <length> r-xs: 6px;
+    out property <length> r-sm: 10px;
+    out property <length> r-md: 12px;
+    out property <length> r-lg: 16px;
+    // type
+    out property <length> fs-display: 30px;
+    out property <length> fs-title: 20px;
+    out property <length> fs-head: 15px;
+    out property <length> fs-body: 13px;
+    out property <length> fs-cap: 12px;
+    // weights: SF Pro, light touch
+    out property <int> w-num: 500;
+    out property <int> w-title: 600;
+    // spacing
+    out property <length> s1: 4px;
+    out property <length> s2: 8px;
+    out property <length> s3: 12px;
+    out property <length> s4: 16px;
+    out property <length> s5: 20px;
+    out property <length> s6: 24px;
+    out property <length> s8: 32px;
+    // motion
+    out property <duration> d-fast: 140ms;
+    out property <duration> d-med: 260ms;
+    out property <duration> d-slow: 520ms;
+    out property <duration> d-count: 720ms;
+    // global motion switch, set from Rust preferences
+    in-out property <bool> motion: true;
+}
+
+// Formatting and small helpers implemented in Rust.
+export global Api {
+    pure callback rp(float) -> string;
+    pure callback rp-compact(float) -> string;
+    pure callback date-label(string) -> string;
+    pure callback shift-date(string, int) -> string;
+    pure callback today() -> string;
+    pure callback shift-month(string, int) -> string;
+    pure callback month-text(string) -> string;
+    // rescales a path drawn on a 1000 x 300 grid to the element size in px
+    pure callback fit(string, float, float) -> string;
+    // money fields: thousand dots while typing, and what shorthand resolves to
+    pure callback format-amount(string) -> string;
+    pure callback amount-suffix(string) -> string;
+}

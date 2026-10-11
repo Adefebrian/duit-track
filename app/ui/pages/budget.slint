@@ -1,0 +1,162 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { Icon, Button, Card, Pill, Bar, Ring, Field, CatBadge, Chip, Enter, SectionTitle } from "../components.slint";
+import { PageHeader } from "../shared.slint";
+
+export component BudgetPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Anggaran";
+
+        }
+
+        Card {
+            HorizontalLayout {
+                padding: 20px;
+                spacing: 20px;
+                Ring {
+                    y: (parent.height - self.height) / 2;
+                    size: 92px;
+                    value: D.b-alloc;
+                    tint: D.b-over-income ? T.neg : T.accent;
+                    VerticalLayout {
+                        alignment: center;
+                        Text {
+                            text: D.b-alloc-text;
+                            horizontal-alignment: center;
+                            font-size: 18px;
+                            font-weight: 600;
+                            color: T.text;
+                        }
+                        Text { text: "teralokasi"; horizontal-alignment: center; font-size: 10.5px; color: T.text3; }
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 28px;
+                        VerticalLayout {
+                            Text { text: "Direncanakan"; font-size: T.fs-cap; color: T.text3; }
+                            Text { text: D.b-planned-text; font-size: 20px; font-weight: 600; color: T.text; }
+                        }
+                        VerticalLayout {
+                            Text { text: "Terpakai"; font-size: T.fs-cap; color: T.text3; }
+                            Text { text: D.b-spent-text; font-size: 20px; font-weight: 600; color: T.text; }
+                        }
+                        VerticalLayout {
+                            Text { text: "Pemasukan"; font-size: T.fs-cap; color: T.text3; }
+                            Text { text: D.b-income-text; font-size: 20px; font-weight: 600; color: T.pos; }
+                        }
+                    }
+                    Text {
+                        text: D.b-free-text;
+                        font-size: T.fs-body;
+                        color: D.b-over-income ? T.neg : T.text2;
+                        wrap: word-wrap;
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 10px;
+                    width: 200px;
+                    Button {
+                        fill: true;
+                        kind: "outline";
+                        icon: "bulb";
+                        label: "Pakai saran";
+                        enabled: D.b-has-suggest;
+                        clicked => { D.budget-apply-suggest(); }
+                    }
+                    Button {
+                        fill: true;
+                        kind: "outline";
+                        icon: "repeat";
+                        label: "Salin bulan lalu";
+                        clicked => { D.budget-copy-prev(); }
+                    }
+                }
+            }
+        }
+
+
+
+        Card {
+            VerticalLayout {
+                padding: 8px;
+                spacing: 0px;
+                for b[i] in D.budget-rows : Enter {
+                    order: i;
+                    Rectangle {
+                        HorizontalLayout {
+                            padding: 12px;
+                            spacing: 14px;
+                            CatBadge {
+                                y: (parent.height - self.height) / 2;
+                                icon: b.icon;
+                                tint: b.tint;
+                                size: 36px;
+                            }
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                alignment: center;
+                                spacing: 7px;
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    Text { text: b.name; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; vertical-alignment: center; }
+                                    if b.over : Pill { text: "Lewat " + b.remaining-text; tone: "neg"; }
+                                    Rectangle { }
+                                }
+                                Bar {
+                                    value: b.ratio;
+                                    tint: b.over ? T.neg : b.ratio > 0.85 ? T.warn : b.tint;
+                                    delay: i * 30ms;
+                                }
+                                HorizontalLayout {
+                                    Text { text: "Terpakai " + b.spent-text; font-size: T.fs-cap; color: T.text3; }
+                                    Text {
+                                        text: b.over ? "" : b.planned-raw != "" ? "Sisa " + b.remaining-text : b.hint;
+                                        horizontal-alignment: right;
+                                        font-size: T.fs-cap;
+                                        color: T.text3;
+                                    }
+                                }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                spacing: 6px;
+                                width: 190px;
+                                Field {
+                                    placeholder: "0";
+                                    text: b.planned-raw;
+                                    money: true;
+                                    accepted(v) => { D.budget-set(b.cat-id, v); }
+                                }
+                                if b.suggested > 0 && b.suggested-text != b.planned-text : Chip {
+                                    text: "Saran " + b.suggested-text;
+                                    clicked => { D.budget-set(b.cat-id, b.suggested-text); }
+                                }
+                            }
+                        }
+                        if i > 0 : Rectangle {
+                            x: 62px;
+                            y: 0;
+                            width: parent.width - 74px;
+                            height: 1px;
+                            background: T.line;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

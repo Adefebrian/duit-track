@@ -1,0 +1,239 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { AccRow } from "../types.slint";
+import { Icon, IconButton, Button, Card, Pill, Reveal, Enter, Money, Ripple, SectionTitle, EmptyState, CatBadge } from "../components.slint";
+import { PageHeader, MiniStat } from "../shared.slint";
+
+component AccCard inherits Card {
+    in property <AccRow> acc;
+    in property <int> order;
+    height: 136px;
+    Ripple {
+        border-radius: T.r-lg;
+        clicked => { D.acc-open(root.acc); }
+    }
+    Enter {
+        order: root.order;
+        VerticalLayout {
+            padding: 20px;
+            spacing: 10px;
+            HorizontalLayout {
+                spacing: 10px;
+                CatBadge { icon: acc.icon; tint: acc.tint; size: 32px; }
+                VerticalLayout {
+                    alignment: center;
+                    Text { text: acc.name; font-size: T.fs-head; font-weight: 600; color: T.text; overflow: elide; }
+                    Text { text: acc.kind-label; font-size: T.fs-cap; color: T.text3; }
+                }
+                if acc.is-default : Pill { y: (parent.height - self.height) / 2; text: "Utama"; tone: "accent"; }
+            }
+            Money {
+                value: acc.balance;
+                exact: acc.balance-text;
+                font-size: 22px;
+                font-weight: 600;
+                color: acc.negative ? T.neg : T.text;
+            }
+            HorizontalLayout {
+                spacing: 14px;
+                alignment: start;
+                HorizontalLayout {
+                    spacing: 4px;
+                    Icon { y: (parent.height - self.height) / 2; name: "arrow-down"; size: 13px; tint: T.pos; }
+                    Text { text: acc.in-text; font-size: T.fs-cap; color: T.text2; vertical-alignment: center; }
+                }
+                HorizontalLayout {
+                    spacing: 4px;
+                    Icon { y: (parent.height - self.height) / 2; name: "arrow-up"; size: 13px; tint: T.text3; }
+                    Text { text: acc.out-text; font-size: T.fs-cap; color: T.text2; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+}
+
+export component WalletsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Dompet";
+            month: false;
+            Button {
+                y: (parent.height - self.height) / 2;
+                kind: "outline";
+                icon: "swap";
+                label: "Pindah dana";
+                clicked => { D.trf-new(); }
+            }
+            Button {
+                y: (parent.height - self.height) / 2;
+                icon: "plus";
+                label: "Sumber dana";
+                clicked => { D.acc-new(); }
+            }
+        }
+
+        // Hero: total pool + 30-day trend
+        Card {
+            HorizontalLayout {
+                padding: 20px;
+                spacing: 24px;
+                VerticalLayout {
+                    width: 260px;
+                    spacing: 10px;
+                    alignment: space-between;
+                    Text { text: "Total uang"; font-size: T.fs-body; font-weight: 600; color: T.text2; }
+                    Money { value: D.pool; exact: D.pool-text; font-size: 34px; font-weight: 600; }
+                    HorizontalLayout {
+                        alignment: start;
+                        spacing: 8px;
+                        Pill { text: D.pool-change-text; tone: D.pool-change-tone; }
+                        Text { text: "30 hari"; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+                    }
+                    // composition bar of balances
+                    Rectangle {
+                        height: 10px;
+                        border-radius: 5px;
+                        background: T.tonal2;
+                        clip: true;
+                        property <float> k: 0;
+                        init => { k = 1; }
+                        animate k { duration: T.motion ? 900ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                        HorizontalLayout {
+                            width: parent.width * parent.k;
+                            spacing: 2px;
+                            for a in D.accounts : Rectangle {
+                                horizontal-stretch: max(0.0001, a.share);
+                                background: a.tint;
+                                visible: a.share > 0;
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        alignment: start;
+                        for a in D.accounts : HorizontalLayout {
+                            spacing: 5px;
+                            visible: a.share > 0;
+                            Rectangle { y: (parent.height - 8px) / 2; width: 8px; height: 8px; border-radius: 2px; background: a.tint; }
+                            Text { text: a.name; font-size: T.fs-cap; color: T.text2; }
+                        }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 6px;
+                    HorizontalLayout {
+                        Text { text: D.pool-max-text; font-size: T.fs-cap; color: T.text3; }
+                    }
+                    Rectangle {
+                        vertical-stretch: 1;
+                        min-height: 104px;
+                        Rectangle { y: 0; height: 1px; background: T.line; }
+                        Rectangle { y: parent.height - 1px; height: 1px; background: T.line; }
+                        Reveal {
+                            duration: 1100ms;
+                            Path {
+                                width: 100%;
+                                height: 100%;
+                                viewbox-width: self.width / 1px;
+                                viewbox-height: self.height / 1px;
+                                commands: Api.fit(D.pool-area, self.width / 1px, self.height / 1px);
+                                fill: T.accent.with-alpha(T.dark ? 0.18 : 0.10);
+                                stroke: transparent;
+                            }
+                            Path {
+                                width: 100%;
+                                height: 100%;
+                                viewbox-width: self.width / 1px;
+                                viewbox-height: self.height / 1px;
+                                commands: Api.fit(D.pool-line, self.width / 1px, self.height / 1px);
+                                stroke: T.accent;
+                                stroke-width: 2.5px;
+                                fill: transparent;
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        Text { text: D.pool-min-text; font-size: T.fs-cap; color: T.text3; }
+                        Text { text: "Hari ini"; font-size: T.fs-cap; color: T.text3; horizontal-alignment: right; }
+                    }
+                }
+            }
+        }
+
+        // Source cards: a full row whenever possible, never one orphan card
+        Rectangle {
+            property <int> n: D.accounts.length;
+            property <int> cols: n <= 4 ? max(n, 1) : (mod(n, 3) == 1 ? 4 : 3);
+            property <length> cw: (self.width - 14px * (cols - 1)) / cols;
+            height: ceil(n / cols) * 150px - 14px;
+            for a[i] in D.accounts : AccCard {
+                x: mod(i, parent.cols) * (parent.cw + 14px);
+                y: floor(i / parent.cols) * 150px;
+                width: parent.cw;
+                acc: a;
+                order: i;
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            MiniStat { icon: "arrow-down"; tint: T.pos; label: "Masuk bulan ini"; value: D.w-in-text; value-color: T.pos; }
+            MiniStat { order: 1; icon: "arrow-up"; label: "Keluar bulan ini"; value: D.w-out-text; }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: 20px;
+                padding-top: 18px;
+                spacing: 2px;
+                HorizontalLayout {
+                    padding-left: 4px;
+                    padding-bottom: 6px;
+                    SectionTitle { text: "Pindah dana"; sub: D.month-label; }
+                }
+                if D.transfers.length == 0 : Text {
+                    x: 4px;
+                    text: "Belum ada";
+                    font-size: T.fs-body;
+                    color: T.text3;
+                }
+                for t[i] in D.transfers : Rectangle {
+                    height: 52px;
+                    border-radius: T.r-md;
+                    Enter {
+                        order: i;
+                        HorizontalLayout {
+                            padding-left: 6px;
+                            padding-right: 4px;
+                            spacing: 12px;
+                            Rectangle {
+                                y: (parent.height - self.height) / 2;
+                                width: 34px;
+                                height: 34px;
+                                border-radius: T.r-badge;
+                                background: T.tonal;
+                                Icon { name: "swap"; size: 16px; tint: T.text2; }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                Text { text: t.from-name + "  ke  " + t.to-name; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; overflow: elide; }
+                                Text { text: t.note != "" ? t.date-text + ", " + t.note : t.date-text; font-size: T.fs-cap; color: T.text3; overflow: elide; }
+                            }
+                            Text { text: t.amount-text; horizontal-alignment: right; vertical-alignment: center; font-weight: 600; color: T.text; }
+                            IconButton { y: (parent.height - self.height) / 2; icon: "trash"; tint: T.text3; clicked => { D.trf-delete(t.id); } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,261 @@
+import { T, Api } from "theme.slint";
+import { D } from "data.slint";
+import { Icon, Ripple, Button, IconButton } from "components.slint";
+import { OverviewPage } from "pages/overview.slint";
+import { AnalyticsPage } from "pages/analytics.slint";
+import { TransactionsPage } from "pages/transactions.slint";
+import { BudgetPage } from "pages/budget.slint";
+import { IncomePage } from "pages/income.slint";
+import { DebtsPage } from "pages/debts.slint";
+import { WalletsPage } from "pages/wallets.slint";
+import { GoalsPage } from "pages/goals.slint";
+import { SettingsPage } from "pages/settings.slint";
+import { QuickSheet, TxSheet, RecSheet, DebtSheet, PaySheet, DebtDetailSheet, CatSheet, ResetSheet, Toast, AccSheet, TransferSheet, GoalSheet, EntrySheet } from "sheets.slint";
+
+export { T, Api, D }
+export * from "types.slint";
+
+component NavItem inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> hint;
+    in property <bool> active;
+    callback clicked();
+    height: 36px;
+    border-radius: T.r-sm;
+    Ripple {
+        border-radius: T.r-sm;
+        clicked => { root.clicked(); }
+    }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 10px;
+        Icon {
+            y: (parent.height - self.height) / 2;
+            name: root.icon;
+            tint: root.active ? T.accent : T.text2;
+        }
+        Text {
+            text: root.label;
+            vertical-alignment: center;
+            font-size: T.fs-body;
+            font-weight: root.active ? 650 : 500;
+            color: root.active ? T.text : T.text2;
+        }
+        Text {
+            text: root.hint;
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            font-size: T.fs-cap;
+            color: T.text3;
+        }
+    }
+}
+
+component QuickButton inherits Rectangle {
+    in property <bool> filled;
+    in property <string> icon;
+    in property <string> label;
+    in property <string> hint;
+    callback clicked();
+    height: T.h-control;
+    border-radius: T.r-control;
+    background: filled ? T.accent : T.bg;
+    border-width: filled ? 0px : 1px;
+    border-color: T.line-strong;
+    Ripple {
+        border-radius: T.r-control;
+        tone: filled ? T.on-accent : T.text;
+        clicked => { root.clicked(); }
+    }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 10px;
+        Icon { y: (parent.height - self.height) / 2; name: root.icon; size: 16px; tint: filled ? T.on-accent : T.text; }
+        Text { text: root.label; vertical-alignment: center; font-size: T.fs-body; font-weight: 600; color: filled ? T.on-accent : T.text; }
+        Text { text: root.hint; horizontal-alignment: right; vertical-alignment: center; font-size: T.fs-cap; color: filled ? T.on-accent.with-alpha(0.7) : T.text3; }
+    }
+}
+
+export component AppWindow inherits Window {
+    title: "Duitrack";
+    preferred-width: 1240px;
+    preferred-height: 820px;
+    min-width: 980px;
+    min-height: 640px;
+    background: T.page;
+    default-font-size: 13px;
+    default-font-family: D.font;
+
+    property <[{icon: string, label: string}]> nav: [
+        { icon: "overview", label: "Ringkasan" },
+        { icon: "analytics", label: "Analitik" },
+        { icon: "list", label: "Transaksi" },
+        { icon: "wallet2", label: "Dompet" },
+        { icon: "target", label: "Rencana" },
+        { icon: "budget", label: "Anggaran" },
+        { icon: "repeat", label: "Rutin" },
+        { icon: "debt", label: "Hutang" },
+        { icon: "settings", label: "Pengaturan" },
+    ];
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.modifiers.meta && (e.text == "k" || e.text == "n" || e.text == "i")) {
+                D.quick-kind = e.text == "i" ? 0 : 1;
+                D.quick-cat = -1;
+                D.quick-parse();
+                D.quick-open = true;
+                return accept;
+            }
+            if (e.modifiers.meta && e.text >= "1" && e.text <= "9") {
+                D.page = e.text.to-float() - 1;
+                return accept;
+            }
+            if (e.text == Key.Escape) {
+                D.quick-open = false;
+                D.tx-sheet = false;
+                D.rec-sheet = false;
+                D.debt-sheet = false;
+                D.pay-sheet = false;
+                D.debt-detail = false;
+                D.cat-sheet = false;
+                D.reset-sheet = false;
+                D.acc-sheet = false;
+                D.trf-sheet = false;
+                D.goal-sheet = false;
+                D.entry-sheet = false;
+                return accept;
+            }
+            reject
+        }
+
+        HorizontalLayout {
+            // Sidebar: tonal layer, no shadow, no divider line.
+            Rectangle {
+                width: 228px;
+                background: T.sidebar;
+                VerticalLayout {
+                    padding: 14px;
+                    padding-top: 22px;
+                    spacing: 2px;
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        padding-bottom: 18px;
+                        spacing: 10px;
+                        Rectangle {
+                            width: 30px;
+                            height: 30px;
+                            border-radius: T.r-badge;
+                            background: T.accent;
+                            Path {
+                                width: 18px;
+                                height: 18px;
+                                viewbox-width: 24;
+                                viewbox-height: 24;
+                                stroke: T.on-accent;
+                                stroke-width: 2.2px;
+                                fill: transparent;
+                                commands: "M3 9c3-3 6-3 9 0s6 3 9 0 M3 16c3-3 6-3 9 0s6 3 9 0";
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            Text { text: "Duitrack"; font-size: 16px; font-weight: 600; color: T.text; }
+                            Text { text: "Keuangan pribadi"; font-size: T.fs-cap; color: T.text3; }
+                        }
+                    }
+                    QuickButton {
+                        filled: true;
+                        icon: "arrow-up";
+                        label: "Catat pengeluaran";
+                        hint: "Cmd K";
+                        clicked => {
+                            D.quick-kind = 1;
+                            D.quick-cat = -1;
+                            D.quick-parse();
+                            D.quick-open = true;
+                        }
+                    }
+                    Rectangle { height: 6px; }
+                    QuickButton {
+                        icon: "arrow-down";
+                        label: "Catat pemasukan";
+                        hint: "Cmd I";
+                        clicked => {
+                            D.quick-kind = 0;
+                            D.quick-cat = -1;
+                            D.quick-parse();
+                            D.quick-open = true;
+                        }
+                    }
+                    Rectangle { height: 14px; }
+                    Rectangle {
+                        height: nav-col.preferred-height;
+                        // sliding selection
+                        Rectangle {
+                            y: D.page * 38px;
+                            height: 36px;
+                            border-radius: T.r-sm;
+                            background: T.bg;
+                            border-width: 1px;
+                            border-color: T.line;
+                            animate y { duration: T.motion ? T.d-med : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                        }
+                        nav-col := VerticalLayout {
+                            spacing: 2px;
+                            for n[i] in root.nav : NavItem {
+                                icon: n.icon;
+                                label: n.label;
+                                hint: "Cmd " + (i + 1);
+                                active: D.page == i;
+                                clicked => { D.page = i; }
+                            }
+                        }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                    HorizontalLayout {
+                        padding-left: 10px;
+                        Text { text: "Offline"; font-size: T.fs-cap; color: T.text3; vertical-alignment: center; }
+                        IconButton {
+                            icon: T.dark ? "sun" : "moon";
+                            clicked => { D.set-theme(T.dark ? 0 : 1); }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                if D.page == 0 : OverviewPage { }
+                if D.page == 1 : AnalyticsPage { }
+                if D.page == 2 : TransactionsPage { }
+                if D.page == 3 : WalletsPage { }
+                if D.page == 4 : GoalsPage { }
+                if D.page == 5 : BudgetPage { }
+                if D.page == 6 : IncomePage { }
+                if D.page == 7 : DebtsPage { }
+                if D.page == 8 : SettingsPage { }
+            }
+        }
+
+        QuickSheet { }
+        TxSheet { }
+        RecSheet { }
+        DebtDetailSheet { }
+        DebtSheet { }
+        PaySheet { }
+        CatSheet { }
+        ResetSheet { }
+        AccSheet { }
+        TransferSheet { }
+        GoalSheet { }
+        EntrySheet { }
+        Toast {
+            x: (parent.width - self.width) / 2 + 114px;
+            y: parent.height - self.height - 24px;
+        }
+    }
+}

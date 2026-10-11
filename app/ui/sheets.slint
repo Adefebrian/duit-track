@@ -1,0 +1,620 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "theme.slint";
+import { D } from "data.slint";
+import { Icon, IconButton, Button, Sheet, Field, DateStepper, MonthStepper, Segmented, Chip, Toggle, Pill, Ripple } from "components.slint";
+import { ParsePreview } from "pages/transactions.slint";
+
+// Three-column chip grid of categories.
+component CatPicker inherits VerticalLayout {
+    in property <string> kind;
+    in-out property <int> selected;
+    callback picked(int);
+    spacing: 8px;
+    Text { text: "Kategori"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+    Rectangle {
+        property <length> cw: (self.width - 16px) / 3;
+        property <int> n: kind == "income" ? D.inc-cats.length : D.exp-cats.length;
+        height: ceil(n / 3) * 38px - 8px;
+        for c[i] in (kind == "income" ? D.inc-cats : D.exp-cats) : Rectangle {
+            x: mod(i, 3) * (parent.cw + 8px);
+            y: floor(i / 3) * 38px;
+            width: parent.cw;
+            height: 30px;
+            border-radius: T.r-control;
+            background: root.selected == c.id ? c.tint.with-alpha(0.14) : T.bg;
+            border-width: 1px;
+            border-color: root.selected == c.id ? c.tint.with-alpha(0.6) : T.line;
+            animate background { duration: T.motion ? T.d-fast : 0ms; }
+            Ripple {
+                border-radius: T.r-control;
+                clicked => {
+                    root.selected = c.id;
+                    root.picked(c.id);
+                }
+            }
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 6px;
+                Icon { y: (parent.height - self.height) / 2; name: c.icon; tint: c.tint; size: 14px; }
+                Text {
+                    text: c.name;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    font-size: T.fs-cap + 0.5px;
+                    font-weight: root.selected == c.id ? 650 : 500;
+                    color: root.selected == c.id ? T.text : T.text2;
+                }
+            }
+        }
+    }
+}
+
+// Chip grid of money sources.
+export component AccPicker inherits VerticalLayout {
+    in property <string> title: "Sumber dana";
+    in-out property <int> selected;
+    in property <int> exclude: -1;
+    callback picked(int);
+    spacing: 8px;
+    Text { text: root.title; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+    Rectangle {
+        property <length> cw: (self.width - 16px) / 3;
+        height: ceil(D.acc-opts.length / 3) * 38px - 8px;
+        for a[i] in D.acc-opts : Rectangle {
+            x: mod(i, 3) * (parent.cw + 8px);
+            y: floor(i / 3) * 38px;
+            width: parent.cw;
+            height: 30px;
+            border-radius: T.r-control;
+            opacity: a.id == root.exclude ? 0.35 : 1;
+            background: root.selected == a.id ? a.tint.with-alpha(0.14) : T.bg;
+            border-width: 1px;
+            border-color: root.selected == a.id ? a.tint.with-alpha(0.6) : T.line;
+            animate background { duration: T.motion ? T.d-fast : 0ms; }
+            Ripple {
+                border-radius: T.r-control;
+                enabled: a.id != root.exclude;
+                clicked => {
+                    root.selected = a.id;
+                    root.picked(a.id);
+                }
+            }
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 6px;
+                Icon { y: (parent.height - self.height) / 2; name: a.icon; tint: a.tint; size: 14px; }
+                Text {
+                    text: a.name;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    font-size: T.fs-cap + 0.5px;
+                    font-weight: root.selected == a.id ? 650 : 500;
+                    color: root.selected == a.id ? T.text : T.text2;
+                }
+            }
+        }
+    }
+}
+
+// Swatch row bound to an index into T.palette.
+component ColorPicker inherits VerticalLayout {
+    in-out property <int> selected;
+    spacing: 8px;
+    Text { text: "Warna"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        for c[i] in T.palette : Rectangle {
+            width: 26px;
+            height: 26px;
+            border-radius: T.r-xs;
+            background: c;
+            border-width: root.selected == i ? 2px : 0px;
+            border-color: T.text;
+            if root.selected == i : Icon { name: "check"; tint: #FFFFFF; size: 14px; }
+            TouchArea { mouse-cursor: pointer; clicked => { root.selected = i; } }
+        }
+    }
+}
+
+component IconPicker inherits VerticalLayout {
+    in-out property <string> selected;
+    in property <color> tint;
+    property <[string]> icons: ["food", "car", "bag", "bolt", "play", "heart", "book", "home", "gift", "card", "wallet", "star", "briefcase", "trend", "target", "shield", "calendar", "repeat", "plus", "dots"];
+    spacing: 8px;
+    Text { text: "Ikon"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+    Rectangle {
+        height: 2 * 36px - 4px;
+        for ic[i] in root.icons : Rectangle {
+            x: mod(i, 10) * 38px;
+            y: floor(i / 10) * 36px;
+            width: 32px;
+            height: 32px;
+            border-radius: T.r-badge;
+            background: root.selected == ic ? root.tint.with-alpha(0.16) : T.tonal;
+            border-width: root.selected == ic ? 1px : 0px;
+            border-color: root.tint.with-alpha(0.6);
+            Icon { name: ic; size: 16px; tint: root.selected == ic ? root.tint : T.text2; }
+            TouchArea { mouse-cursor: pointer; clicked => { root.selected = ic; } }
+        }
+    }
+}
+
+component ErrorText inherits Text {
+    font-size: T.fs-cap + 0.5px;
+    color: T.neg;
+    wrap: word-wrap;
+}
+
+component Actions inherits HorizontalLayout {
+    spacing: 8px;
+    alignment: end;
+}
+
+export component QuickSheet inherits Sheet {
+    title: D.quick-kind == 0 ? "Catat pemasukan" : "Catat pengeluaran";
+    open: D.quick-open;
+    sheet-width: 560px;
+    dismiss => { D.quick-open = false; }
+    changed open => {
+        if (self.open) {
+            input.focus-input();
+        }
+    }
+    Segmented {
+        items: ["Pemasukan", "Pengeluaran"];
+        index <=> D.quick-kind;
+        changed => {
+            D.quick-cat = -1;
+            D.quick-parse();
+            input.focus-input();
+        }
+    }
+    input := Field {
+        placeholder: D.quick-kind == 0 ? "gaji 8,5jt bca tgl 25" : "kopi 25rb gopay kemarin";
+        text <=> D.quick-text;
+        edited => {
+            D.quick-cat = -1;
+            D.quick-acc = -1;
+            D.quick-parse();
+        }
+        accepted => {
+            if (D.quick-save()) {
+                D.quick-open = false;
+            }
+        }
+    }
+    HorizontalLayout {
+        ParsePreview { }
+        Text {
+            text: D.parsed.valid ? D.parsed.amount-text : "";
+            horizontal-alignment: right;
+            vertical-alignment: center;
+            font-size: 22px;
+            font-weight: 600;
+            color: D.parsed.kind == "income" ? T.pos : T.text;
+        }
+    }
+    if D.parsed.valid : CatPicker {
+        kind: D.parsed.kind;
+        selected: D.quick-cat >= 0 ? D.quick-cat : D.parsed.cat-id;
+        picked(id) => {
+            D.quick-cat = id;
+            D.quick-parse();
+        }
+    }
+    if D.parsed.valid : AccPicker {
+        title: D.parsed.kind == "income" ? "Masuk ke" : "Dibayar dari";
+        selected: D.quick-acc >= 0 ? D.quick-acc : D.parsed.acc-id;
+        picked(id) => {
+            D.quick-acc = id;
+            D.quick-parse();
+        }
+    }
+    Actions {
+        Button {
+            label: "Simpan";
+            icon: "check";
+            enabled: D.parsed.valid;
+            clicked => {
+                if (D.quick-save()) {
+                    D.quick-open = false;
+                }
+            }
+        }
+    }
+}
+
+export component TxSheet inherits Sheet {
+    title: D.f-id == 0 ? "Transaksi baru" : "Ubah transaksi";
+    open: D.tx-sheet;
+    dismiss => { D.tx-sheet = false; }
+    Segmented {
+        items: ["Pemasukan", "Pengeluaran"];
+        index: D.f-kind == "income" ? 0 : 1;
+        changed(i) => {
+            D.f-kind = i == 0 ? "income" : "expense";
+            D.f-cat = i == 0 ? D.inc-cats[0].id : D.exp-cats[0].id;
+        }
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nominal"; placeholder: "25rb atau 25.000"; text <=> D.f-amount; money: true; }
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Tanggal"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+            DateStepper { date <=> D.f-date; }
+        }
+    }
+    Field { label: "Catatan"; placeholder: "Makan siang"; text <=> D.f-note; }
+    CatPicker { kind: D.f-kind; selected <=> D.f-cat; }
+    AccPicker { title: D.f-kind == "income" ? "Masuk ke" : "Dibayar dari"; selected <=> D.f-acc; }
+    if D.f-error != "" : ErrorText { text: D.f-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.f-id != 0 : Button { kind: "danger"; icon: "trash"; label: "Hapus"; clicked => { D.tx-delete(D.f-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.tx-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.tx-save(); } }
+    }
+}
+
+export component RecSheet inherits Sheet {
+    title: D.r-id == 0 ? (D.r-kind == "income" ? "Pemasukan rutin" : "Tagihan rutin") : "Ubah rutin";
+    open: D.rec-sheet;
+    dismiss => { D.rec-sheet = false; }
+    Field { label: "Nama"; placeholder: D.r-kind == "income" ? "Gaji bulanan" : "Sewa kos"; text <=> D.r-name; }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nominal"; placeholder: "1,8jt"; text <=> D.r-amount; money: true; }
+        Field { label: "Tanggal"; placeholder: "1 - 31"; text <=> D.r-day; width: 120px; }
+    }
+    CatPicker { kind: D.r-kind; selected <=> D.r-cat; }
+    AccPicker { title: D.r-kind == "income" ? "Masuk ke" : "Dibayar dari"; selected <=> D.r-acc; }
+    if D.r-error != "" : ErrorText { text: D.r-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.r-id != 0 : Button { kind: "danger"; icon: "trash"; label: "Hapus"; clicked => { D.rec-delete(D.r-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.rec-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.rec-save(); } }
+    }
+}
+
+export component DebtSheet inherits Sheet {
+    title: D.g-id == 0 ? "Tambah hutang" : "Ubah hutang";
+    open: D.debt-sheet;
+    sheet-width: 500px;
+    dismiss => { D.debt-sheet = false; }
+    Segmented {
+        items: ["Cicilan tetap", "Fleksibel"];
+        index: D.g-inst ? 0 : 1;
+        changed(i) => { D.g-inst = i == 0; }
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nama"; placeholder: D.g-inst ? "Cicilan laptop" : "Kartu kredit"; text <=> D.g-name; }
+        Field { label: "Ke siapa"; placeholder: D.g-inst ? "Kakak, PayLater" : "BCA"; text <=> D.g-lender; }
+    }
+    if D.g-inst : HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Cicilan per bulan"; placeholder: "500rb"; text <=> D.g-min; money: true; }
+        Field { label: "Tenor"; placeholder: "6"; text <=> D.g-tenor; suffix: "bulan"; }
+    }
+    if D.g-inst : HorizontalLayout {
+        spacing: 12px;
+        if D.g-id == 0 : Field { label: "Sudah dibayar"; placeholder: "0"; text <=> D.g-paid; suffix: "kali"; }
+        Field { label: "Jatuh tempo tiap tanggal"; placeholder: "1 - 31"; text <=> D.g-due; }
+    }
+    if !D.g-inst : HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Sisa hutang"; placeholder: "8,5jt"; text <=> D.g-start; money: true; }
+        Field { label: "Bunga per tahun"; placeholder: "0"; text <=> D.g-apr; suffix: "%"; }
+    }
+    if !D.g-inst : HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Bayar minimum"; placeholder: "450rb"; text <=> D.g-min; money: true; }
+        Field { label: "Jatuh tempo tiap tanggal"; placeholder: "1 - 31"; text <=> D.g-due; }
+    }
+    if D.g-error != "" : ErrorText { text: D.g-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.g-id != 0 : Button { kind: "danger"; icon: "trash"; label: "Hapus"; clicked => { D.debt-delete(D.g-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.debt-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.debt-save(); } }
+    }
+}
+
+export component PaySheet inherits Sheet {
+    title: (D.p-kind == "payment" ? "Bayar " : "Tambah tagihan ") + D.p-debt-name;
+    open: D.pay-sheet;
+    dismiss => { D.pay-sheet = false; }
+    Segmented {
+        items: ["Pembayaran", "Bunga atau denda"];
+        index: D.p-kind == "payment" ? 0 : 1;
+        changed(i) => { D.p-kind = i == 0 ? "payment" : "charge"; }
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nominal"; placeholder: "450rb"; text <=> D.p-amount; money: true; }
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Tanggal"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+            DateStepper { date <=> D.p-date; }
+        }
+    }
+    if D.p-kind == "payment" : AccPicker { title: "Dibayar dari"; selected <=> D.p-acc; }
+    if D.p-kind == "payment" : HorizontalLayout {
+        spacing: 12px;
+        Text { text: "Hitung sebagai pengeluaran"; font-size: T.fs-body; font-weight: 600; color: T.text; vertical-alignment: center; }
+        Toggle { y: (parent.height - self.height) / 2; on <=> D.p-record; }
+    }
+    if D.p-error != "" : ErrorText { text: D.p-error; }
+    Actions {
+        Button { kind: "outline"; label: "Batal"; clicked => { D.pay-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.pay-save(); } }
+    }
+}
+
+export component StatusPill inherits Pill {
+    in property <string> status;
+    text: status == "paid" ? "Lunas" : status == "late" ? "Telat" : status == "due" ? "Segera" : "Nanti";
+    tone: status == "paid" ? "pos" : status == "late" ? "neg" : status == "due" ? "warn" : "neutral";
+}
+
+export component DebtDetailSheet inherits Sheet {
+    title: D.debt-current.name;
+    open: D.debt-detail;
+    sheet-width: 520px;
+    dismiss => { D.debt-detail = false; }
+    HorizontalLayout {
+        spacing: 24px;
+        VerticalLayout {
+            Text { text: "Sisa"; font-size: T.fs-cap; color: T.text3; }
+            Text { text: D.debt-current.balance-text; font-size: 20px; font-weight: 600; color: T.text; }
+        }
+        VerticalLayout {
+            Text { text: "Terbayar"; font-size: T.fs-cap; color: T.text3; }
+            Text { text: D.debt-current.paid-text; font-size: 20px; font-weight: 600; color: T.pos; }
+        }
+        if D.debt-current.is-inst : VerticalLayout {
+            Text { text: "Cicilan"; font-size: T.fs-cap; color: T.text3; }
+            Text { text: D.debt-current.paid-n + " / " + D.debt-current.tenor; font-size: 20px; font-weight: 600; color: T.text; }
+        }
+        if !D.debt-current.is-inst : VerticalLayout {
+            Text { text: "Bunga / bulan"; font-size: T.fs-cap; color: T.text3; }
+            Text { text: D.debt-current.interest-text; font-size: 20px; font-weight: 600; color: T.text; }
+        }
+    }
+    ScrollView {
+        height: min(300px, max(64px, (D.debt-current.is-inst ? D.debt-current.sched.length : D.payments.length) * 44px + 8px));
+        content-width: self.visible-width;
+        content-height: list.preferred-height;
+        list := VerticalLayout {
+            width: parent.visible-width;
+            if D.debt-current.is-inst : VerticalLayout {
+                for r in D.debt-current.sched : HorizontalLayout {
+                    height: 44px;
+                    spacing: 12px;
+                    Rectangle {
+                        y: (parent.height - self.height) / 2;
+                        width: 28px;
+                        height: 28px;
+                        border-radius: T.r-badge;
+                        background: r.status == "paid" ? T.pos-soft : T.tonal;
+                        Text { text: r.n; font-size: T.fs-cap; font-weight: 600; color: r.status == "paid" ? T.pos : T.text2; }
+                    }
+                    Text { text: r.date-text; font-size: T.fs-body; color: T.text; vertical-alignment: center; }
+                    Text { text: r.amount-text; font-size: T.fs-body; font-weight: 600; color: T.text; vertical-alignment: center; horizontal-alignment: right; }
+                    StatusPill { y: (parent.height - self.height) / 2; status: r.status; }
+                }
+            }
+            if !D.debt-current.is-inst && D.payments.length == 0 : Text { text: "Belum ada pembayaran"; color: T.text3; font-size: T.fs-body; }
+            if !D.debt-current.is-inst : VerticalLayout {
+                for p in D.payments : HorizontalLayout {
+                    height: 44px;
+                    spacing: 10px;
+                    Icon {
+                        y: (parent.height - self.height) / 2;
+                        name: p.kind == "payment" ? "check" : "plus";
+                        tint: p.kind == "payment" ? T.pos : T.warn;
+                    }
+                    Text { text: p.date-text; font-size: T.fs-body; color: T.text; vertical-alignment: center; }
+                    Text {
+                        text: (p.kind == "payment" ? "-" : "+") + p.amount-text;
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                        font-weight: 600;
+                        color: p.kind == "payment" ? T.pos : T.warn;
+                    }
+                    IconButton { y: (parent.height - self.height) / 2; icon: "trash"; tint: T.text3; clicked => { D.payment-delete(p.id); } }
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 8px;
+        Button { kind: "outline"; icon: "edit"; label: "Ubah"; clicked => { D.debt-edit(D.debt-current.id); } }
+        Rectangle { }
+        if !D.debt-current.is-inst : Button { kind: "tonal"; label: "Bunga"; clicked => { D.pay-open(D.debt-current.id); D.p-kind = "charge"; } }
+        if !D.debt-current.settled : Button { label: "Bayar"; clicked => { D.pay-open(D.debt-current.id); } }
+    }
+}
+
+export component AccSheet inherits Sheet {
+    title: D.a-id == 0 ? "Sumber dana baru" : "Ubah sumber dana";
+    open: D.acc-sheet;
+    dismiss => { D.acc-sheet = false; }
+    Segmented {
+        items: ["Bank", "E-wallet", "Tunai", "Lainnya"];
+        index: D.a-kind == "bank" ? 0 : D.a-kind == "ewallet" ? 1 : D.a-kind == "cash" ? 2 : 3;
+        changed(i) => { D.a-kind = i == 0 ? "bank" : i == 1 ? "ewallet" : i == 2 ? "cash" : "other"; }
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nama"; placeholder: D.a-kind == "ewallet" ? "GoPay" : D.a-kind == "cash" ? "Dompet" : "BCA"; text <=> D.a-name; }
+        Field { label: "Saldo sekarang"; placeholder: "0"; text <=> D.a-balance; money: true; }
+    }
+    Field { label: "Alias saat mengetik"; placeholder: "bca, mbca"; text <=> D.a-keywords; }
+    ColorPicker { selected <=> D.a-color; }
+    HorizontalLayout {
+        spacing: 12px;
+        Text { text: "Jadikan sumber utama"; font-size: T.fs-body; font-weight: 600; color: T.text; vertical-alignment: center; }
+        Toggle { y: (parent.height - self.height) / 2; on <=> D.a-default; }
+    }
+    if D.a-error != "" : ErrorText { text: D.a-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.a-id != 0 : Button { kind: "danger"; label: "Arsipkan"; clicked => { D.acc-archive(D.a-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.acc-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.acc-save(); } }
+    }
+}
+
+export component TransferSheet inherits Sheet {
+    title: "Pindah dana";
+    open: D.trf-sheet;
+    dismiss => { D.trf-sheet = false; }
+    AccPicker { title: "Dari"; selected <=> D.t-from; }
+    AccPicker { title: "Ke"; selected <=> D.t-to; exclude: D.t-from; }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nominal"; placeholder: "500rb"; text <=> D.t-amount; money: true; }
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Tanggal"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+            DateStepper { date <=> D.t-date; }
+        }
+    }
+    Field { label: "Catatan"; placeholder: "Top up, tarik tunai"; text <=> D.t-note; }
+    if D.t-error != "" : ErrorText { text: D.t-error; }
+    Actions {
+        Button { kind: "outline"; label: "Batal"; clicked => { D.trf-sheet = false; } }
+        Button { label: "Pindahkan"; icon: "swap"; clicked => { D.trf-save(); } }
+    }
+}
+
+export component GoalSheet inherits Sheet {
+    title: D.gl-id == 0 ? "Rencana baru" : "Ubah rencana";
+    open: D.goal-sheet;
+    sheet-width: 500px;
+    dismiss => { D.goal-sheet = false; }
+    Field { label: "Nama"; placeholder: "Trip ke Jepang"; text <=> D.gl-name; }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Target"; placeholder: "25jt"; text <=> D.gl-target; money: true; }
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Tenggat"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+            MonthStepper { date <=> D.gl-deadline; }
+        }
+    }
+    VerticalLayout {
+        spacing: 6px;
+        Text { text: "Ritme nabung"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+        Segmented { items: ["Harian", "Mingguan", "Bulanan"]; index <=> D.gl-freq; }
+    }
+    IconPicker { selected <=> D.gl-icon; tint: T.palette[D.gl-color]; }
+    ColorPicker { selected <=> D.gl-color; }
+    if D.gl-error != "" : ErrorText { text: D.gl-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.gl-id != 0 : Button { kind: "danger"; icon: "trash"; label: "Hapus"; clicked => { D.goal-delete(D.gl-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.goal-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.goal-save(); } }
+    }
+}
+
+export component EntrySheet inherits Sheet {
+    title: (D.ge-kind == 0 ? "Setor ke " : "Tarik dari ") + D.goal-current.name;
+    open: D.entry-sheet;
+    dismiss => { D.entry-sheet = false; }
+    Segmented {
+        items: ["Setor", "Tarik"];
+        index <=> D.ge-kind;
+    }
+    HorizontalLayout {
+        spacing: 12px;
+        Field { label: "Nominal"; placeholder: D.goal-current.freq == 0 ? D.goal-current.per-day-text : D.goal-current.freq == 1 ? D.goal-current.per-week-text : D.goal-current.per-month-text; text <=> D.ge-amount; money: true; }
+        VerticalLayout {
+            spacing: 6px;
+            Text { text: "Tanggal"; font-size: T.fs-cap; font-weight: 600; color: T.text2; }
+            DateStepper { date <=> D.ge-date; }
+        }
+    }
+    Field { label: "Catatan"; placeholder: "opsional"; text <=> D.ge-note; }
+    if D.ge-error != "" : ErrorText { text: D.ge-error; }
+    Actions {
+        Button { kind: "outline"; label: "Batal"; clicked => { D.entry-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.entry-save(); } }
+    }
+}
+
+export component CatSheet inherits Sheet {
+    title: D.c-id == 0 ? "Kategori baru" : "Ubah kategori";
+    open: D.cat-sheet;
+    dismiss => { D.cat-sheet = false; }
+    Field { label: "Nama"; placeholder: "Kopi"; text <=> D.c-name; }
+    Field { label: "Kata kunci"; placeholder: "kopi, starbucks, janji jiwa"; text <=> D.c-keywords; }
+    IconPicker { selected <=> D.c-icon; tint: T.palette[D.c-color]; }
+    ColorPicker { selected <=> D.c-color; }
+    if D.c-error != "" : ErrorText { text: D.c-error; }
+    HorizontalLayout {
+        spacing: 8px;
+        if D.c-id != 0 : Button { kind: "danger"; label: "Arsipkan"; clicked => { D.cat-archive(D.c-id); } }
+        Rectangle { }
+        Button { kind: "outline"; label: "Batal"; clicked => { D.cat-sheet = false; } }
+        Button { label: "Simpan"; icon: "check"; clicked => { D.cat-save(); } }
+    }
+}
+
+export component ResetSheet inherits Sheet {
+    title: "Hapus semua data?";
+    open: D.reset-sheet;
+    sheet-width: 420px;
+    dismiss => { D.reset-sheet = false; }
+    Text {
+        text: "Semua data dihapus permanen. Ekspor cadangan dulu jika ragu.";
+        wrap: word-wrap;
+        font-size: T.fs-body;
+        color: T.text2;
+    }
+    Actions {
+        Button { kind: "outline"; label: "Batal"; clicked => { D.reset-sheet = false; } }
+        Button { kind: "danger"; icon: "trash"; label: "Hapus permanen"; clicked => { D.reset-all(); } }
+    }
+}
+
+export component Toast inherits Rectangle {
+    property <float> k: D.toast-show ? 1 : 0;
+    animate k { duration: T.motion ? 280ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+    visible: k > 0.01;
+    width: lay.preferred-width;
+    height: 44px;
+    border-radius: T.r-inner;
+    background: T.inverse;
+    opacity: k;
+    lay := HorizontalLayout {
+        padding-left: 18px;
+        padding-right: D.toast-undo ? 6px : 18px;
+        spacing: 12px;
+        Text { text: D.toast; color: T.on-inverse; font-size: T.fs-body; vertical-alignment: center; }
+        if D.toast-undo : Rectangle {
+            y: 6px;
+            height: 32px;
+            width: u.preferred-width + 24px;
+            border-radius: T.r-control;
+            Ripple {
+                border-radius: T.r-control;
+                tone: T.on-inverse;
+                clicked => { D.undo(); }
+            }
+            u := Text { text: "Urungkan"; color: T.inverse-accent; font-weight: 600; font-size: T.fs-body; }
+        }
+    }
+}

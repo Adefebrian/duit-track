@@ -1,0 +1,478 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { Icon, Card, Pill, Bar, Ring, Reveal, Enter, Segmented, SectionTitle, EmptyState } from "../components.slint";
+import { PageHeader } from "../shared.slint";
+
+component Stat inherits Card {
+    in property <string> label;
+    in property <string> value;
+    in property <string> icon;
+    in property <color> tint: T.text;
+    in property <int> order;
+    height: 84px;
+    Enter {
+        order: root.order;
+        VerticalLayout {
+            padding: 20px;
+            spacing: 6px;
+            alignment: center;
+            HorizontalLayout {
+                spacing: 7px;
+                alignment: start;
+                Icon { name: root.icon; size: 15px; tint: T.text3; }
+                Text { text: root.label; font-size: T.fs-cap + 0.5px; font-weight: 600; color: T.text2; vertical-alignment: center; overflow: elide; }
+            }
+            Text { text: root.value; font-size: 20px; font-weight: 600; color: root.tint; overflow: elide; }
+        }
+    }
+}
+
+component Legend inherits HorizontalLayout {
+    in property <string> text;
+    in property <color> tint;
+    spacing: 6px;
+    Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: root.tint; }
+    Text { text: root.text; font-size: T.fs-cap; color: T.text2; vertical-alignment: center; }
+}
+
+component LinePanel inherits Rectangle {
+    in property <string> line;
+    in property <string> area;
+    in property <color> tint: T.accent;
+    in property <float> zero-y: -1;
+    for g in [0, 0.5, 1] : Rectangle {
+        y: (parent.height - 1px) * g;
+        height: 1px;
+        background: T.line;
+    }
+    if root.zero-y >= 0 : Rectangle {
+        y: parent.height * root.zero-y;
+        height: 1px;
+        background: T.line-strong;
+    }
+    Reveal {
+        duration: 1100ms;
+        if root.area != "" : Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: self.width / 1px;
+            viewbox-height: self.height / 1px;
+            commands: Api.fit(root.area, self.width / 1px, self.height / 1px);
+            fill: root.tint.with-alpha(T.dark ? 0.18 : 0.10);
+            stroke: transparent;
+        }
+        Path {
+            width: 100%;
+            height: 100%;
+            viewbox-width: self.width / 1px;
+            viewbox-height: self.height / 1px;
+            commands: Api.fit(root.line, self.width / 1px, self.height / 1px);
+            stroke: root.tint;
+            stroke-width: 2.5px;
+            fill: transparent;
+        }
+    }
+}
+
+component MonthAxis inherits HorizontalLayout {
+    for m in D.an-month-labels : Text {
+        text: m;
+        horizontal-alignment: center;
+        font-size: 10.5px;
+        color: T.text3;
+    }
+}
+
+component HealthCard inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        alignment: start;
+        SectionTitle { text: "Skor kesehatan"; }
+        HorizontalLayout {
+            spacing: 24px;
+            // score inside the ring, label below it so nothing touches the stroke
+            VerticalLayout {
+                alignment: center;
+                spacing: 10px;
+                Ring {
+                    size: 128px;
+                    thickness: 10;
+                    value: D.health / 100;
+                    tint: D.health-tone == "pos" ? T.pos : D.health-tone == "warn" ? T.warn : D.health-tone == "neg" ? T.neg : T.accent;
+                    property <float> shown: D.health;
+                    animate shown { duration: T.motion ? 900ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                    Text { text: round(parent.shown); font-size: 34px; font-weight: 500; letter-spacing: -0.8px; color: T.text; }
+                }
+                HorizontalLayout {
+                    alignment: center;
+                    Pill {
+                        text: D.health-label;
+                        tone: D.health-tone == "pos" ? "pos" : D.health-tone == "warn" ? "warn" : D.health-tone == "neg" ? "neg" : "accent";
+                    }
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                spacing: 12px;
+                for p[i] in D.health-parts : VerticalLayout {
+                    spacing: 6px;
+                    HorizontalLayout {
+                        Text { text: p.name; font-size: T.fs-body; font-weight: 600; color: T.text; }
+                        Text {
+                            text: round(p.score) + "/" + round(p.max);
+                            horizontal-alignment: right;
+                            font-size: T.fs-cap + 0.5px;
+                            font-weight: 600;
+                            color: T.text3;
+                        }
+                    }
+                    Bar {
+                        value: p.max > 0 ? p.score / p.max : 0;
+                        thickness: 6px;
+                        delay: i * 70ms;
+                        tint: p.score / p.max >= 0.7 ? T.pos : p.score / p.max >= 0.4 ? T.warn : T.neg;
+                    }
+                }
+            }
+        }
+    }
+}
+
+component CashflowChart inherits Card {
+    property <int> hi: -1;
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        HorizontalLayout {
+            SectionTitle { text: "Arus kas"; }
+            HorizontalLayout {
+                alignment: end;
+                spacing: 14px;
+                Legend { text: "Masuk"; tint: T.pos; }
+                Legend { text: "Keluar"; tint: T.accent; }
+            }
+        }
+        plot := Rectangle {
+            height: 220px;
+            property <length> cw: (self.width - 6px * max(0, D.an-months.length - 1)) / max(1, D.an-months.length);
+            HorizontalLayout {
+                spacing: 6px;
+                for b[i] in D.an-months : Rectangle {
+                    background: root.hi == i ? T.hover : transparent;
+                    border-radius: T.r-sm;
+                    VerticalLayout {
+                        spacing: 6px;
+                        padding-top: 4px;
+                        Rectangle {
+                            vertical-stretch: 1;
+                            property <float> k: 0;
+                            init => { k = 1; }
+                            animate k { duration: T.motion ? 750ms : 0ms; delay: T.motion ? i * 45ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                            property <length> bw: min(16px, self.width / 2 - 2px);
+                            Rectangle {
+                                x: parent.width / 2 - parent.bw - 1px;
+                                width: parent.bw;
+                                height: parent.height * b.a * parent.k;
+                                y: parent.height - self.height;
+                                border-radius: 4px;
+                                background: T.pos.with-alpha(b.current ? 0.45 : 1);
+                            }
+                            Rectangle {
+                                x: parent.width / 2 + 1px;
+                                width: parent.bw;
+                                height: parent.height * b.b * parent.k;
+                                y: parent.height - self.height;
+                                border-radius: 4px;
+                                background: T.accent.with-alpha(b.current ? 0.45 : 1);
+                            }
+                        }
+                        Text {
+                            text: b.label;
+                            horizontal-alignment: center;
+                            font-size: 10.5px;
+                            color: b.current ? T.text : T.text3;
+                        }
+                    }
+                    TouchArea {
+                        changed has-hover => {
+                            if (self.has-hover) {
+                                root.hi = i;
+                            } else if (root.hi == i) {
+                                root.hi = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            if root.hi >= 0 && root.hi < D.an-months.length : Rectangle {
+                property <length> cx: root.hi * (plot.cw + 6px) + plot.cw / 2;
+                x: max(0px, min(plot.width - self.width, self.cx - self.width / 2));
+                y: 0;
+                width: tip.preferred-width + 24px;
+                height: tip.preferred-height + 16px;
+                border-radius: T.r-sm;
+                background: T.inverse;
+                tip := VerticalLayout {
+                    x: 12px;
+                    y: 8px;
+                    spacing: 2px;
+                    Text { text: D.an-months[root.hi].label; font-size: T.fs-cap; font-weight: 600; color: T.on-inverse; }
+                    Text { text: "Masuk " + D.an-months[root.hi].a-text; font-size: T.fs-cap; color: T.on-inverse; }
+                    Text { text: "Keluar " + D.an-months[root.hi].b-text; font-size: T.fs-cap; color: T.on-inverse; }
+                }
+            }
+        }
+    }
+}
+
+component Donut inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 16px;
+        alignment: start;
+        SectionTitle { text: "Komposisi pengeluaran"; }
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                width: 150px;
+                height: 150px;
+                property <float> k: 0;
+                init => { k = 1; }
+                animate k { duration: T.motion ? 800ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                opacity: k;
+                for s in D.an-slices : Path {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: parent.width * (0.86 + 0.14 * parent.k);
+                    height: self.width;
+                    viewbox-width: 100;
+                    viewbox-height: 100;
+                    commands: s.path;
+                    stroke: s.tint;
+                    stroke-width: self.width * 0.13;
+                    fill: transparent;
+                }
+                VerticalLayout {
+                    alignment: center;
+                    Text { text: "Total"; horizontal-alignment: center; font-size: T.fs-cap; color: T.text3; }
+                    Text { text: D.an-spend-total; horizontal-alignment: center; font-size: T.fs-head + 1px; font-weight: 600; color: T.text; }
+                }
+            }
+        }
+        VerticalLayout {
+            spacing: 8px;
+            for s[i] in D.an-slices : HorizontalLayout {
+                spacing: 8px;
+                Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: s.tint; }
+                Text { text: s.name; font-size: T.fs-body; color: T.text; vertical-alignment: center; overflow: elide; }
+                Text { text: s.amount-text; font-size: T.fs-cap + 0.5px; color: T.text3; horizontal-alignment: right; vertical-alignment: center; }
+                Text { text: s.share-text; width: 40px; horizontal-alignment: right; font-size: T.fs-body; font-weight: 600; color: T.text; vertical-alignment: center; }
+            }
+        }
+    }
+}
+
+component PoolTrend inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        SectionTitle { text: "Total uang akhir bulan"; }
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+            Text { text: D.an-pool-now; font-size: 22px; font-weight: 600; letter-spacing: -0.4px; color: T.text; vertical-alignment: center; }
+            Pill { y: (parent.height - self.height) / 2; text: D.an-pool-change; tone: D.an-pool-tone; }
+        }
+        LinePanel { height: 150px; line: D.an-pool-path; area: D.an-pool-area; tint: T.accent; }
+        MonthAxis { }
+    }
+}
+
+component WeekdayChart inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        HorizontalLayout {
+            SectionTitle { text: "Pola belanja harian"; }
+            Text { text: D.an-weekday-peak; horizontal-alignment: right; font-size: T.fs-cap + 0.5px; color: T.text2; vertical-alignment: center; }
+        }
+        HorizontalLayout {
+            spacing: 10px;
+            height: 168px;
+            for b[i] in D.an-weekday : VerticalLayout {
+                spacing: 6px;
+                Text { text: b.b-text; horizontal-alignment: center; font-size: 10.5px; color: T.text3; overflow: elide; }
+                Rectangle {
+                    vertical-stretch: 1;
+                    property <float> k: 0;
+                    init => { k = 1; }
+                    animate k { duration: T.motion ? 650ms : 0ms; delay: T.motion ? i * 50ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                    Rectangle {
+                        x: (parent.width - self.width) / 2;
+                        width: min(30px, parent.width);
+                        height: parent.height * b.b * parent.k;
+                        y: parent.height - self.height;
+                        border-radius: 4px;
+                        background: b.current ? T.accent : T.accent.with-alpha(0.35);
+                    }
+                }
+                Text { text: b.label; horizontal-alignment: center; font-size: T.fs-cap; font-weight: b.current ? 700 : 400; color: b.current ? T.text : T.text3; }
+            }
+        }
+    }
+}
+
+component SavingsTrend inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        HorizontalLayout {
+            SectionTitle { text: "Tingkat tabungan"; }
+            Text { text: D.an-savings-last; horizontal-alignment: right; font-size: T.fs-head; font-weight: 600; color: T.text; vertical-alignment: center; }
+        }
+        LinePanel { height: 150px; line: D.an-savings-path; tint: T.pos; zero-y: D.an-zero-y; }
+        MonthAxis { }
+    }
+}
+
+component Adherence inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        SectionTitle { text: "Kepatuhan anggaran"; }
+        HorizontalLayout {
+            spacing: 8px;
+            height: 150px;
+            for b[i] in D.an-adherence : VerticalLayout {
+                spacing: 6px;
+                Text { text: b.a-text; horizontal-alignment: center; font-size: 10.5px; color: T.text3; overflow: elide; }
+                Rectangle {
+                    vertical-stretch: 1;
+                    property <float> k: 0;
+                    init => { k = 1; }
+                    animate k { duration: T.motion ? 650ms : 0ms; delay: T.motion ? i * 50ms : 0ms; easing: cubic-bezier(0.2, 0, 0, 1); }
+                    Rectangle {
+                        x: (parent.width - self.width) / 2;
+                        width: min(26px, parent.width);
+                        height: parent.height;
+                        border-radius: 4px;
+                        background: T.tonal2;
+                    }
+                    Rectangle {
+                        x: (parent.width - self.width) / 2;
+                        width: min(26px, parent.width);
+                        height: parent.height * b.a * parent.k;
+                        y: parent.height - self.height;
+                        border-radius: 4px;
+                        background: b.a >= 0.8 ? T.pos : b.a >= 0.5 ? T.warn : T.neg;
+                    }
+                }
+                Text { text: b.label; horizontal-alignment: center; font-size: 10.5px; color: T.text3; }
+            }
+        }
+    }
+}
+
+component Trends inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 6px;
+        SectionTitle { text: "Tren kategori"; }
+        for t[i] in D.an-trends : Enter {
+            order: i;
+            HorizontalLayout {
+                spacing: 12px;
+                height: 42px;
+                Rectangle { y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 3px; background: t.tint; }
+                Text { width: 130px; text: t.name; font-size: T.fs-body; font-weight: 600; color: T.text; overflow: elide; vertical-alignment: center; }
+                Reveal {
+                    duration: 900ms;
+                    Path {
+                        y: 8px;
+                        width: 100%;
+                        height: parent.height - 16px;
+                        viewbox-width: self.width / 1px;
+                        viewbox-height: self.height / 1px;
+                        commands: Api.fit(t.path, self.width / 1px, self.height / 1px);
+                        stroke: t.tint;
+                        stroke-width: 2px;
+                        fill: transparent;
+                    }
+                }
+                Pill { y: (parent.height - self.height) / 2; text: t.change-text; tone: t.change-tone; }
+            }
+        }
+    }
+}
+
+component TopSpend inherits Card {
+    VerticalLayout {
+        padding: 20px;
+        spacing: 12px;
+        SectionTitle { text: "Paling banyak"; }
+        for t[i] in D.an-top : VerticalLayout {
+            spacing: 6px;
+            HorizontalLayout {
+                spacing: 8px;
+                Text { text: t.name; font-size: T.fs-body; font-weight: 600; color: T.text; overflow: elide; }
+                Text { text: t.count-text; font-size: T.fs-cap; color: T.text3; horizontal-alignment: right; vertical-alignment: center; }
+                Text { text: t.amount-text; width: 116px; font-size: T.fs-body; font-weight: 600; color: T.text; horizontal-alignment: right; }
+            }
+            Bar { value: t.ratio; thickness: 6px; delay: i * 50ms; }
+        }
+    }
+}
+
+export component AnalyticsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader {
+            title: "Analitik";
+            subtitle: D.has-data ? D.an-summary : "";
+            month: false;
+            Segmented {
+                y: (parent.height - self.height) / 2;
+                width: 200px;
+                items: ["6 bulan", "12 bulan"];
+                index <=> D.an-span;
+                changed(i) => { D.an-span-changed(i); }
+            }
+        }
+
+        if !D.has-data : Card {
+            EmptyState {
+                icon: "analytics";
+                title: "Belum ada data";
+                body: "Grafik muncul setelah kamu mencatat transaksi";
+            }
+        }
+        if D.has-data : HorizontalLayout {
+            spacing: 14px;
+            Stat { preferred-width: 10px; horizontal-stretch: 1; order: 0; icon: "arrow-down"; label: "Rata-rata masuk"; value: D.an-avg-income; }
+            Stat { preferred-width: 10px; horizontal-stretch: 1; order: 1; icon: "arrow-up"; label: "Rata-rata keluar"; value: D.an-avg-expense; }
+            Stat { preferred-width: 10px; horizontal-stretch: 1; order: 2; icon: "target"; label: "Tabungan"; value: D.an-avg-savings; }
+            Stat { preferred-width: 10px; horizontal-stretch: 1; order: 3; icon: "card"; label: "Rasio cicilan"; value: D.an-dti; }
+        }
+        if D.has-data : GridLayout {
+            spacing: 14px;
+            HealthCard { row: 0; col: 0; preferred-width: 10px; horizontal-stretch: 1; }
+            CashflowChart { row: 0; col: 1; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            Donut { row: 1; col: 0; preferred-width: 10px; horizontal-stretch: 1; }
+            PoolTrend { row: 1; col: 1; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            WeekdayChart { row: 2; col: 0; preferred-width: 10px; horizontal-stretch: 1; }
+            SavingsTrend { row: 2; col: 1; preferred-width: 10px; horizontal-stretch: 1; }
+            Adherence { row: 2; col: 2; preferred-width: 10px; horizontal-stretch: 1; }
+            TopSpend { row: 3; col: 0; preferred-width: 10px; horizontal-stretch: 1; }
+            Trends { row: 3; col: 1; colspan: 2; preferred-width: 10px; horizontal-stretch: 1; }
+        }
+    }
+}

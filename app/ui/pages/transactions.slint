@@ -1,0 +1,139 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { Icon, Button, Card, Pill, Segmented, Field, CatBadge, EmptyState, Enter } from "../components.slint";
+import { PageHeader, TxLine, MiniStat } from "../shared.slint";
+
+// Live preview of what the parser understood.
+export component ParsePreview inherits HorizontalLayout {
+    spacing: 8px;
+    alignment: start;
+    height: 30px;
+    if D.parsed.valid : Rectangle {
+        width: chip.preferred-width + 20px;
+        border-radius: 15px;
+        background: D.parsed.tint.with-alpha(0.12);
+        chip := HorizontalLayout {
+            x: 10px;
+            spacing: 6px;
+            Icon { y: (parent.height - self.height) / 2; name: D.parsed.icon; tint: D.parsed.tint; size: 14px; }
+            Text { text: D.parsed.cat-name; font-size: T.fs-cap + 0.5px; font-weight: 600; color: D.parsed.tint; vertical-alignment: center; }
+        }
+    }
+    if D.parsed.valid && D.parsed.acc-name != "" : Pill { y: 4px; text: D.parsed.acc-name; tone: "accent"; }
+    if D.parsed.valid : Pill { y: 4px; text: D.parsed.date-text; }
+    if D.parsed.valid && D.parsed.assumed : Pill { y: 4px; text: "dibaca ribuan"; tone: "warn"; }
+    if D.parsed.valid && D.parsed.confidence < 0.35 : Pill { y: 4px; text: "cek kategori"; tone: "warn"; }
+    if !D.parsed.valid && D.quick-text != "" : Text {
+        text: "Tambah nominal, misal 25rb";
+        font-size: T.fs-cap + 0.5px;
+        color: T.text3;
+        vertical-alignment: center;
+    }
+}
+
+export component TransactionsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader { title: "Transaksi"; }
+
+        Card {
+            VerticalLayout {
+                padding: 20px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Segmented {
+                        width: 240px;
+                        items: ["Pemasukan", "Pengeluaran"];
+                        index <=> D.quick-kind;
+                        changed => {
+                            D.quick-cat = -1;
+                            D.quick-parse();
+                        }
+                    }
+                    Field {
+                        placeholder: D.quick-kind == 0 ? "gaji 8,5jt bca tgl 25" : "kopi 25rb gopay kemarin";
+                        text <=> D.quick-text;
+                        edited => {
+                            D.quick-cat = -1;
+                            D.quick-acc = -1;
+                            D.quick-parse();
+                        }
+                        accepted => { if (D.quick-save()) { } }
+                    }
+                    Button {
+                        label: "Simpan";
+                        icon: "check";
+                        enabled: D.parsed.valid;
+                        clicked => { if (D.quick-save()) { } }
+                    }
+                    Button {
+                        kind: "outline";
+                        label: "Form";
+                        clicked => { D.tx-new(); }
+                    }
+                }
+                if D.quick-text != "" : HorizontalLayout {
+                    spacing: 12px;
+                    ParsePreview { }
+                    Text {
+                        text: D.parsed.valid ? D.parsed.amount-text : "";
+                        horizontal-alignment: right;
+                        vertical-alignment: center;
+                        font-size: T.fs-head;
+                        font-weight: 500;
+                        color: D.parsed.kind == "income" ? T.pos : T.text;
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 12px;
+            Segmented {
+                width: 320px;
+                items: ["Semua", "Pemasukan", "Pengeluaran"];
+                index <=> D.tx-filter;
+                changed => { D.tx-query(); }
+            }
+            Field {
+                placeholder: "Cari catatan, kategori, atau sumber";
+                text <=> D.tx-search;
+                edited => { D.tx-query(); }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            MiniStat { order: 0; icon: "arrow-down"; tint: T.pos; label: "Masuk"; value: D.tx-in-text; value-color: T.pos; }
+            MiniStat { order: 1; icon: "arrow-up"; tint: T.text2; label: "Keluar"; value: D.tx-out-text; }
+            MiniStat { order: 2; icon: "list"; label: "Jumlah"; value: D.tx-count-text; }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: 12px;
+                padding-top: 4px;
+                spacing: 2px;
+                if D.tx-rows.length == 0 : EmptyState {
+                    icon: "list";
+                    title: D.tx-search != "" ? "Tidak ditemukan" : "Belum ada transaksi";
+                    body: D.tx-search != "" ? "Coba kata lain" : "Ketik di atas, tekan Enter";
+                }
+                for r[i] in D.tx-rows : TxLine {
+                    tx: r;
+                    order: i;
+                    open(row) => { D.tx-open(row); }
+                }
+            }
+        }
+    }
+}

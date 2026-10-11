@@ -1,0 +1,181 @@
+import { ScrollView } from "std-widgets.slint";
+import { T, Api } from "../theme.slint";
+import { D } from "../data.slint";
+import { CatOpt } from "../types.slint";
+import { Icon, Button, Card, Segmented, CatBadge, Ripple, SectionTitle, Enter } from "../components.slint";
+import { PageHeader } from "../shared.slint";
+
+component CatLine inherits Rectangle {
+    in property <CatOpt> cat;
+    height: 50px;
+    border-radius: T.r-md;
+    Ripple {
+        border-radius: T.r-md;
+        clicked => { D.cat-open(root.cat); }
+    }
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 12px;
+        CatBadge { y: (parent.height - self.height) / 2; icon: cat.icon; tint: cat.tint; size: 30px; }
+        VerticalLayout {
+            alignment: center;
+            Text { text: cat.name; font-size: T.fs-body; font-weight: 600; color: T.text; }
+            Text {
+                text: cat.keywords != "" ? cat.keywords : "Belajar dari catatanmu";
+                font-size: T.fs-cap;
+                color: T.text3;
+                overflow: elide;
+            }
+        }
+        Icon { y: (parent.height - self.height) / 2; name: "edit"; size: 15px; tint: T.text3; }
+    }
+}
+
+component SettingRow inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> body;
+    spacing: 16px;
+    height: 52px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 2px;
+        Text { text: root.title; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; }
+        if root.body != "" : Text { text: root.body; font-size: T.fs-cap + 0.5px; color: T.text3; overflow: elide; }
+    }
+    @children
+}
+
+export component SettingsPage inherits ScrollView {
+    content-width: self.visible-width;
+    content-height: body.preferred-height;
+    body := VerticalLayout {
+        width: root.visible-width;
+        padding: 28px;
+        padding-top: 20px;
+        spacing: 16px;
+        alignment: start;
+
+        PageHeader { title: "Pengaturan"; month: false; }
+
+        Card {
+            VerticalLayout {
+                padding: 20px;
+                spacing: 12px;
+                SectionTitle { text: "Tampilan"; }
+                SettingRow {
+                    title: "Tema";
+                    body: "";
+                    Segmented {
+                        y: (parent.height - self.height) / 2;
+                        width: 300px;
+                        items: ["Terang", "Malam", "Ikuti sistem"];
+                        index <=> D.theme-mode;
+                        changed(i) => { D.set-theme(i); }
+                    }
+                }
+                SettingRow {
+                    title: "Animasi";
+                    body: "";
+                    Segmented {
+                        y: (parent.height - self.height) / 2;
+                        width: 300px;
+                        items: ["Selalu", "Ikuti sistem", "Mati"];
+                        index <=> D.motion-mode;
+                        changed(i) => { D.set-motion(i); }
+                    }
+                }
+            }
+        }
+
+        Card {
+            VerticalLayout {
+                padding: 20px;
+                spacing: 12px;
+                SectionTitle { text: "Data"; sub: "lokal, offline"; }
+                SettingRow {
+                    title: "Cadangkan";
+                    body: "File JSON";
+                    Button { y: (parent.height - self.height) / 2; width: 168px; fill: true; kind: "outline"; icon: "down"; label: "Ekspor"; clicked => { D.export-data(); } }
+                }
+                SettingRow {
+                    title: "Pulihkan";
+                    body: "Ganti data dari file cadangan";
+                    Button { y: (parent.height - self.height) / 2; width: 168px; fill: true; kind: "outline"; icon: "up"; label: "Impor"; clicked => { D.import-data(); } }
+                }
+                if !D.has-data : SettingRow {
+                    title: "Data contoh";
+                    body: "4 bulan riwayat untuk mencoba";
+                    Button { y: (parent.height - self.height) / 2; width: 168px; fill: true; kind: "outline"; icon: "star"; label: "Isi contoh"; clicked => { D.seed-demo(); } }
+                }
+                SettingRow {
+                    title: "Hapus semua data";
+                    body: "Permanen";
+                    Button { y: (parent.height - self.height) / 2; width: 168px; fill: true; kind: "danger"; icon: "trash"; label: "Hapus"; clicked => { D.reset-sheet = true; } }
+                }
+                Text { text: "Lokasi database: " + D.db-path; font-size: T.fs-cap; color: T.text3; wrap: word-wrap; }
+            }
+        }
+
+        Card {
+            HorizontalLayout {
+                padding: 20px;
+                spacing: 14px;
+                Rectangle {
+                    y: (parent.height - self.height) / 2;
+                    width: 44px;
+                    height: 44px;
+                    border-radius: T.r-badge;
+                    background: T.accent;
+                    Path {
+                        width: 24px;
+                        height: 24px;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        stroke: T.on-accent;
+                        stroke-width: 2.2px;
+                        fill: transparent;
+                        commands: "M3 9c3-3 6-3 9 0s6 3 9 0 M3 16c3-3 6-3 9 0s6 3 9 0";
+                    }
+                }
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    Text { text: "Duitrack 0.1.0"; font-size: T.fs-body + 1px; font-weight: 600; color: T.text; }
+                    Text { text: "Dibuat oleh Brian, adefebrian.com, github.com/adefebrian"; font-size: T.fs-cap; color: T.text2; overflow: elide; }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 14px;
+            alignment: stretch;
+            for group[g] in [{ title: "Kategori pengeluaran", kind: "expense" }, { title: "Kategori pemasukan", kind: "income" }] : Card {
+                horizontal-stretch: 1;
+                preferred-width: 10px;
+                VerticalLayout {
+                    padding: 20px;
+                    spacing: 2px;
+                    alignment: start;
+                    HorizontalLayout {
+                        padding-left: 4px;
+                        padding-bottom: 6px;
+                        SectionTitle { text: group.title; }
+                        Button {
+                            compact: true;
+                            kind: "tonal";
+                            icon: "plus";
+                            label: "Tambah";
+                            clicked => {
+                                D.cat-new();
+                                D.c-kind = group.kind;
+                            }
+                        }
+                    }
+                    for c in (group.kind == "expense" ? D.exp-cats : D.inc-cats) : CatLine { cat: c; }
+                }
+            }
+        }
+
+    }
+}
